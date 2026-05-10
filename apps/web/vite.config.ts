@@ -1216,7 +1216,7 @@ export default defineConfig({
     outDir: '../../dist/apps/web',
     // watch 模式下不清空输出目录，避免 index.html 丢失导致 serve 失败
     emptyOutDir: !isWatchMode,
-    reportCompressedSize: true,
+    reportCompressedSize: false,
     // 首屏只注入壳层资源，懒加载分组改由运行时按需拉取/空闲预取。
     modulePreload: false,
     commonjsOptions: {
