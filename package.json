@@ -24,7 +24,7 @@
   "scripts": {
     "start": "nx run web:serve-pwa",
     "build": "node scripts/update-version.js && nx run-many -t=build",
-    "build:web": "node scripts/update-version.js && NODE_OPTIONS='--max-old-space-size=4096' npx nx build web --no-interactive --skip-nx-cache",
+    "build:web": "node scripts/update-version.js && npx vite build -c apps/web/vite.config.ts && npx vite build -c apps/web/vite.sw.config.ts",
     "preview": "npx serve dist/apps/web -l 7288",
     "preview:watch": "concurrently -k \"cd apps/web && NODE_OPTIONS='--max-old-space-size=8192' npx vite build --watch\" \"npx wait-on dist/apps/web/index.html && npx serve dist/apps/web -l 7288\"",
     "iframe:test:host": "python3 -m http.server 7201 -d apps/web/public",
