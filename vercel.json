@@ -3,6 +3,11 @@
   "outputDirectory": "dist/apps/web",
   "installCommand": "npm install",
   "framework": null,
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
