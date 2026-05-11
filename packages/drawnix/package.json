@@ -10,7 +10,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@aitu/utils": "*",
+    "@aitu/utils": "workspace:*",
     "@floating-ui/react": "^0.26.24",
     "@milkdown/crepe": "^7.18.0",
     "@milkdown/kit": "^7.18.0",
