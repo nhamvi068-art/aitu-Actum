@@ -785,6 +785,16 @@ function precacheManifestPlugin(): Plugin {
   return {
     name: 'precache-manifest',
     apply: 'build',
+    configResolved(config) {
+      // Skip during SW library build - it shares the same outDir and has no entry input
+      const isLibraryBuild =
+        config.build.lib &&
+        Array.isArray(config.build.lib.formats) &&
+        config.build.lib.formats.includes('iife');
+      if (isLibraryBuild) {
+        this.skip();
+      }
+    },
     closeBundle: {
       sequential: true,
       order: 'post',
@@ -799,6 +809,11 @@ function precacheManifestPlugin(): Plugin {
             PRECACHE_ALWAYS_INCLUDE.has(url) ||
             (ext !== '.html' && PRECACHE_EXTENSIONS.has(ext))
         );
+
+        // Ensure the dist directory exists before writing
+        if (!fs.existsSync(outDir)) {
+          fs.mkdirSync(outDir, { recursive: true });
+        }
 
         // 写入 manifest 文件
         const manifestPath = path.join(outDir, 'precache-manifest.json');
@@ -828,6 +843,16 @@ function idlePrefetchManifestPlugin(): Plugin {
   return {
     name: 'idle-prefetch-manifest',
     apply: 'build',
+    configResolved(config) {
+      // Skip during SW library build
+      const isLibraryBuild =
+        config.build.lib &&
+        Array.isArray(config.build.lib.formats) &&
+        config.build.lib.formats.includes('iife');
+      if (isLibraryBuild) {
+        this.skip();
+      }
+    },
     generateBundle(_options, bundle) {
       bundleGroupEntries = Object.fromEntries(
         IDLE_PREFETCH_GROUPS.map((group) => [
