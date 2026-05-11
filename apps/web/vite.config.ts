@@ -1208,8 +1208,8 @@ export default defineConfig({
     visualizer({
       open: false,
       filename: path.resolve(__dirname, '../../dist/apps/web/stats.html'),
-      gzipSize: true,
-      brotliSize: true,
+      gzipSize: false,
+      brotliSize: false,
     }),
     deferEntryAssetsPlugin(),
     rewriteEntryAssetsToCDNPlugin(),
@@ -1244,6 +1244,7 @@ export default defineConfig({
     reportCompressedSize: false,
     // 首屏只注入壳层资源，懒加载分组改由运行时按需拉取/空闲预取。
     modulePreload: false,
+    minify: false,
     commonjsOptions: {
       transformMixedEsModules: true,
     },
