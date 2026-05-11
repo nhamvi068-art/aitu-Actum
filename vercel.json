@@ -1,11 +1,11 @@
 {
-  "buildCommand": "NODE_OPTIONS='--max-old-space-size=6144' npm run build:web",
+  "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' npm run build:web",
   "outputDirectory": "dist/apps/web",
   "installCommand": "npm install",
   "framework": null,
   "build": {
     "env": {
-      "NODE_OPTIONS": "--max-old-space-size=6144"
+      "NODE_OPTIONS": "--max-old-space-size=4096"
     }
   },
   "rewrites": [
