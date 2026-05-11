@@ -1248,6 +1248,7 @@ export default defineConfig({
       transformMixedEsModules: true,
     },
     rollupOptions: {
+      external: ['pptxgenjs'],
       output: {
         manualChunks(id, context) {
           return resolveManualChunk(id, context);
