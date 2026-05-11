@@ -1,7 +1,7 @@
 {
   "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' pnpm run build:web",
   "outputDirectory": "dist/apps/web",
-  "installCommand": "corepack enable && corepack prepare pnpm@10.22.0 --activate && pnpm install --ignore-scripts",
+  "installCommand": "corepack enable && corepack prepare pnpm@10.24.0 --activate && pnpm install",
   "framework": null,
   "rewrites": [
     {
