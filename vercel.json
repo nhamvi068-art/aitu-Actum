@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx nx run web:build",
+  "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' npx nx run web:build",
   "installCommand": "npm install",
   "framework": null
 }
