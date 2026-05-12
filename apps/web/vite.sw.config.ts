@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@aitu/utils': path.resolve(__dirname, '../../packages/utils/src/index.ts'),
+        '@plait-board/mermaid-to-drawnix': path.resolve(__dirname, '../../node_modules/@plait-board/mermaid-to-drawnix'),
+        'mermaid': path.resolve(__dirname, '../../node_modules/mermaid'),
+        '@plait-board/markdown-to-drawnix': path.resolve(__dirname, '../../node_modules/@plait-board/markdown-to-drawnix'),
       },
     },
     define: {
