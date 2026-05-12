@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd apps/web && node --max-old-space-size=4096 ../../node_modules/vite/bin/vite.js build -c vite.config.ts && node --max-old-space-size=4096 ../../node_modules/vite/bin/vite.js build -c vite.sw.config.ts",
+  "buildCommand": "npx nx run web:build",
   "installCommand": "npm install",
   "framework": null
 }
