@@ -1,5 +1,5 @@
 {
   "buildCommand": "NODE_OPTIONS='--max-old-space-size=4096' npx nx run web:build-app && NODE_OPTIONS='--max-old-space-size=4096' npx nx run web:build-sw",
-  "installCommand": "npm install",
+  "installCommand": "npm install --include=dev",
   "framework": null
 }
