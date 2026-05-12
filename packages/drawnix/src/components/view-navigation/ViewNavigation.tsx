@@ -13,7 +13,7 @@ import {
   getViewportOrigination,
 } from '@plait/core';
 import { MinusIcon, AddIcon, ChevronDownIcon } from 'tdesign-icons-react';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { Minimap } from '../minimap/Minimap';
 import { useChatDrawerControl } from '../../contexts/ChatDrawerContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../popover/popover';

@@ -39,7 +39,7 @@ import {
   BoardTransforms,
   PlaitPointerType,
 } from '@plait/core';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { MindPointerType } from '@plait/mind';
 import { ArrowLineShape, BasicShapes, DrawPointerType } from '@plait/draw';
 import { BoardCreationMode, setCreationMode } from '@plait/common';

@@ -88,7 +88,7 @@ export default defineConfig({
         'react',
         'react-dom',
         'react/jsx-runtime',
-        '@plait-board/react-board',
+        '@heshisheji/react-board',
         '@plait-board/mermaid-to-drawnix',
         'classnames',
         'open-color',

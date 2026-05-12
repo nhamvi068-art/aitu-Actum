@@ -30,7 +30,7 @@ import {
   ZoomOutIcon,
   ImageUploadIcon,
 } from '../icons';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import {
   ATTACHED_ELEMENT_CLASS_NAME,
   BoardTransforms,

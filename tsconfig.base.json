@@ -20,8 +20,8 @@
       "@drawnix/drawnix/runtime": ["packages/drawnix/src/runtime.ts"],
       "@aitu/utils": ["packages/utils/src/index.ts"],
       "tdesign-react": ["packages/drawnix/src/utils/tdesign.ts"],
-      "@plait-board/react-board": ["packages/react-board/src/index.ts"],
-      "@plait-board/react-text": ["packages/react-text/src/index.ts"]
+      "@heshisheji/react-board": ["packages/react-board/src/index.ts"],
+      "@heshisheji/react-text": ["packages/react-text/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

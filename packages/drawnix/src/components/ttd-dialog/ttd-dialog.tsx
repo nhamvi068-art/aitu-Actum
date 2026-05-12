@@ -5,7 +5,7 @@ import AIVideoGeneration from './ai-video-generation';
 import type { ReferenceImage } from './shared/ReferenceImageUpload';
 import { useI18n } from '../../i18n';
 import type { KnowledgeContextRef } from '../../types/task.types';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import React, {
   useState,
   useEffect,

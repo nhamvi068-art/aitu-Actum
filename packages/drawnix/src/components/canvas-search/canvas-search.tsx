@@ -8,7 +8,7 @@ import React, {
 import { PlaitBoard, PlaitElement, getRectangleByElements } from '@plait/core';
 import { extractTextFromElement } from '../../utils/selection-utils';
 import { scrollToPoint } from '../../utils/selection-utils';
-import { setSearchHighlightQuery } from '@plait-board/react-text';
+import { setSearchHighlightQuery } from '@heshisheji/react-text';
 import { useI18n } from '../../i18n';
 import { HoverTip } from '../shared';
 import { Search as SearchIcon, X, ChevronUp, ChevronDown } from 'lucide-react';

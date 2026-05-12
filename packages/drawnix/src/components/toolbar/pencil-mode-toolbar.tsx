@@ -1,5 +1,5 @@
 import { ToolButton } from '../tool-button';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { useDrawnix } from '../../hooks/use-drawnix';
 import { setIsPencilMode } from '../../plugins/with-pencil';
 

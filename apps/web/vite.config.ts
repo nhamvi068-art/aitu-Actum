@@ -1026,7 +1026,7 @@ function rewriteEntryAssetsToCDNPlugin(): Plugin {
           indexHtmlPath,
           'utf8'
         )) as string;
-        const cdnBaseUrl = `https://cdn.jsdelivr.net/npm/aitu-app@${appVersion}`;
+        const cdnBaseUrl = `https://cdn.jsdelivr.net/npm/actum-canvas@${appVersion}`;
         let rewrittenCount = 0;
 
         const rewriteAssetUrl = (localPath: string) => {
@@ -1102,7 +1102,7 @@ function rewriteManifestAssetsToCDNPlugin(): Plugin {
         const manifest = JSON.parse(
           (await readFileWithFdRetry(manifestPath, 'utf8')) as string
         );
-        const cdnBaseUrl = `https://cdn.jsdelivr.net/npm/aitu-app@${appVersion}`;
+        const cdnBaseUrl = `https://cdn.jsdelivr.net/npm/actum-canvas@${appVersion}`;
         let rewrittenCount = 0;
 
         const rewriteManifestAssetUrl = (assetUrl: string) => {

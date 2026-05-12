@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '../popover/popover';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { PlaitBoard } from '@plait/core';
 import { Z_INDEX } from '../../constants/z-index';
 import { WeComIcon } from '../icons';

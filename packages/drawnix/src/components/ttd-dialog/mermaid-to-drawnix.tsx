@@ -8,7 +8,7 @@ import { TTDDialogOutput } from './ttd-dialog-output';
 import { TTDDialogSubmitShortcut } from './ttd-dialog-submit-shortcut';
 import { useDrawnix, DialogType } from '../../hooks/use-drawnix';
 import { useI18n } from '../../i18n';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import {
   getViewportOrigination,
   PlaitBoard,

@@ -5,7 +5,7 @@ import {
 } from '@plait/common';
 import type { PlaitBoard } from '@plait/core';
 import { createRoot } from 'react-dom/client';
-import { Text, type CustomEditor } from '@plait-board/react-text';
+import { Text, type CustomEditor } from '@heshisheji/react-text';
 import { ReactEditor } from 'slate-react';
 import { Node as SlateNode, Transforms } from 'slate';
 import type { ReactBoard } from './board';

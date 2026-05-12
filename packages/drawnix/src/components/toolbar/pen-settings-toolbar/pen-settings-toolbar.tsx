@@ -6,7 +6,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import classNames from 'classnames';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { PlaitBoard } from '@plait/core';
 import { Island } from '../../island';
 import { ToolButton } from '../../tool-button';

@@ -1,6 +1,6 @@
 import { ConfirmDialog } from '../dialog/ConfirmDialog';
 import { useDrawnix } from '../../hooks/use-drawnix';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { useI18n } from '../../i18n';
 
 export const CleanConfirm = ({

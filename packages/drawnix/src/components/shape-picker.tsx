@@ -15,7 +15,7 @@ import { BoardTransforms } from '@plait/core';
 import React from 'react';
 import { BoardCreationMode, setCreationMode } from '@plait/common';
 import { BasicShapes, DrawPointerType, FlowchartSymbols } from '@plait/draw';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { splitRows } from '@aitu/utils';
 import { finishPenOnToolSwitch } from '../plugins/pen/with-pen-create';
 

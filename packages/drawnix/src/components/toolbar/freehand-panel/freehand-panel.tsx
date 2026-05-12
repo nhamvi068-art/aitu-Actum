@@ -15,7 +15,7 @@ import { BoardCreationMode, setCreationMode } from '@plait/common';
 import { FreehandShape } from '../../../plugins/freehand/type';
 import { PenShape } from '../../../plugins/pen/type';
 import { finishPenOnToolSwitch } from '../../../plugins/pen/with-pen-create';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { splitRows } from '@aitu/utils';
 import {
     DrawnixPointerType,

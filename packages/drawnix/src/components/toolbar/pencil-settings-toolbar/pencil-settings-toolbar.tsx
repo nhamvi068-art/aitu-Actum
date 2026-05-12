@@ -5,7 +5,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import classNames from 'classnames';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { DEFAULT_COLOR, PlaitBoard } from '@plait/core';
 import { Circle, Square } from 'lucide-react';
 import { Island } from '../../island';

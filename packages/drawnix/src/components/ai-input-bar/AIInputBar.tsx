@@ -28,7 +28,7 @@ import { Maximize2, Minimize2, Send } from 'lucide-react';
 import { MessagePlugin } from 'tdesign-react';
 import { useConfirmDialog } from '../dialog/ConfirmDialog';
 import { ImageUploadIcon, MediaLibraryIcon } from '../icons';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { SelectedContentPreview } from '../shared/SelectedContentPreview';
 import { PromptOptimizeButton } from '../shared/PromptOptimizeButton';
 import { KnowledgeNoteContextSelector } from '../shared/KnowledgeNoteContextSelector';

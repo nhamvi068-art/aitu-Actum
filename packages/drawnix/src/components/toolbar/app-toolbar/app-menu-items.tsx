@@ -11,7 +11,7 @@ import {
   CleanBrokenLinksIcon,
   CommandPaletteIcon,
 } from '../../icons';
-import { useBoard, useListRender } from '@plait-board/react-board';
+import { useBoard, useListRender } from '@heshisheji/react-board';
 import {
   BoardTransforms,
   PlaitBoard,

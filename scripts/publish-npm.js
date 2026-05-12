@@ -9,8 +9,8 @@
  * 3. 发布到 npm
  * 
  * 使用免费 CDN 访问：
- * - unpkg: https://unpkg.com/aitu-app@版本号/index.html
- * - jsdelivr: https://cdn.jsdelivr.net/npm/aitu-app@版本号/index.html
+ * - unpkg: https://unpkg.com/actum-canvas@版本号/index.html
+ * - jsdelivr: https://cdn.jsdelivr.net/npm/actum-canvas@版本号/index.html
  * 
  * 用法：
  *   node scripts/publish-npm.js [--dry-run] [--skip-build]
@@ -23,7 +23,7 @@ const { execSync } = require('child_process');
 // 配置
 const CONFIG = {
   // npm 包名（使用非 scoped 包名，便于公开访问）
-  packageName: 'aitu-app',
+  packageName: '@heshisheji/actum-canvas',
   distDir: path.resolve(__dirname, '../dist/apps/web'),
   rootPackageJson: path.resolve(__dirname, '../package.json'),
 };

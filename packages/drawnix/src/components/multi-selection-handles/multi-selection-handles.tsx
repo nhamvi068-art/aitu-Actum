@@ -18,7 +18,7 @@ import {
   isMovingElements,
   isSelectionMoving,
 } from '@plait/core';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { RESIZE_HANDLE_DIAMETER } from '@plait/common';
 import { Freehand } from '../../plugins/freehand/type';
 import { PenPath } from '../../plugins/pen/type';

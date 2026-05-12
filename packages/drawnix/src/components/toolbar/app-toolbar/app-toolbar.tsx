@@ -1,4 +1,4 @@
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import Stack from '../../stack';
 import { ToolButton } from '../../tool-button';
 import {

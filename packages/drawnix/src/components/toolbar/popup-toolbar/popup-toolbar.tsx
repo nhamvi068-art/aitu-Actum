@@ -28,7 +28,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useBoard } from '@plait-board/react-board';
+import { useBoard } from '@heshisheji/react-board';
 import { flip, offset, shift, useFloating } from '@floating-ui/react';
 import { Island } from '../../island';
 import classNames from 'classnames';
