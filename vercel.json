@@ -1,4 +1,4 @@
 {
-  "buildCommand": "npm run build:web",
+  "buildCommand": "npx vite build -c apps/web/vite.config.ts && npx vite build -c apps/web/vite.sw.config.ts",
   "installCommand": "npm install"
 }
