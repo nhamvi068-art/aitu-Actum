@@ -1,6 +1,4 @@
 {
   "buildCommand": "pnpm run build",
-  "installCommand": "npm install -g pnpm@9.12.1 && pnpm install",
-  "framework": null,
-  "nodeVersion": "22"
+  "installCommand": "npm install -g pnpm@9.12.1 && pnpm install"
 }
