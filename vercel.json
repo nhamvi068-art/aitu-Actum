@@ -1,7 +1,7 @@
 {
   "buildCommand": "node scripts/update-version.js && cd apps/web && NODE_OPTIONS='--max-old-space-size=4096' ../../node_modules/.bin/vite build && NODE_OPTIONS='--max-old-space-size=4096' ../../node_modules/.bin/vite build --config vite.sw.config.ts",
   "installCommand": "npm install --legacy-peer-deps --include=dev --prefer-offline",
-  "routes": [
-    { "src": "/(.*)", "dest": "/index.html", "status": 200 }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
