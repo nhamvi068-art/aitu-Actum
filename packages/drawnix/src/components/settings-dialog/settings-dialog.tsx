@@ -261,7 +261,7 @@ const IMAGE_API_COMPATIBILITY_META: Record<
     label: 'OpenAI GPT Image',
   },
   'tuzi-gpt-image': {
-    label: 'Blt GPT 兼容（旧版）',
+    label: 'Tuzi GPT 兼容',
   },
   'gptbest-gpt-image': {
     label: 'Blt GPT 兼容',

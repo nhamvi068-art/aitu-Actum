@@ -1,6 +1,6 @@
-feat: add GitHub Actions CI/CD workflows for Vercel deployment
+refactor: replace blt GPT adapter with updated tuzi GPT adapter
 
-- Add .github/workflows/ci.yml: lint, typecheck, build, smoke tests, and Vercel preview/prod deployment
-- Add .github/workflows/vercel-deploy.yml: standalone Vercel deploy workflow with workflow_dispatch support
-- Remove .github/ from .gitignore to allow workflow files to be tracked
-- vercel.json was already correctly configured with build command, output directory, rewrites, and redirects
+- Replace tuzi-gpt-image-adapter.ts with opentu-main version:
+  response_format and quality only written when present
+- Remove blt-image-adapter.ts (no longer used)
+- Update unit tests to match new body construction logic
