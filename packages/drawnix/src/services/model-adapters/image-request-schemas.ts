@@ -9,14 +9,8 @@ export const OFFICIAL_GPT_IMAGE_EDIT_REQUEST_SCHEMA =
 export const TUZI_GPT_IMAGE_EDIT_REQUEST_SCHEMA =
   'tuzi.image.gpt-edit-json';
 
-export const BLT_GPT_IMAGE_GENERATION_REQUEST_SCHEMA =
-  'blt.image.gpt-generation-json';
-
-export const BLT_GPT_IMAGE_EDIT_REQUEST_SCHEMA =
-  'blt.image.gpt-edit-json';
-
 export const GPTBEST_GPT_IMAGE_EDIT_REQUEST_SCHEMA =
-  'gptbest.image.gpt-edit-json';
+  'gptbest.image.gpt-edit-form';
 
 export const GPTBEST_GPT_IMAGE_GENERATION_REQUEST_SCHEMA =
   'gptbest.image.gpt-generation-json';

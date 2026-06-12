@@ -1,6 +1,4 @@
 import { registerDefaultModelAdapters } from './default-adapters';
-import { registerTuziGPTImageAdapter } from './tuzi-gpt-image-adapter';
-import { registerBltImageAdapter } from './blt-image-adapter';
 
 export * from './types';
 export * from './registry';
@@ -13,12 +11,7 @@ export * from './gpt-image-adapter';
 export * from './seedream-adapter';
 export * from './seedance-adapter';
 export * from './nano-banana-adapter';
-export * from './tuzi-gpt-image-adapter';
-export * from './blt-image-adapter';
-export * from './gptbest-image-adapter';
 export * from './image-request-schemas';
 export * from './context';
 
 registerDefaultModelAdapters();
-registerTuziGPTImageAdapter();
-registerBltImageAdapter();

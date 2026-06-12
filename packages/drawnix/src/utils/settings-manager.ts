@@ -348,7 +348,8 @@ class SettingsManager {
       value === 'auto' ||
       value === 'openai-gpt-image' ||
       value === 'tuzi-gpt-image' ||
-      value === 'blt-gpt-image' ||
+      value === 'gptbest-gpt-image' ||
+      value === 'nanobanana' ||
       value === 'openai-compatible-basic'
     ) {
       return value;

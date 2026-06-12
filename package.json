@@ -79,9 +79,6 @@
     "deploy:nginx": "node scripts/upload-nginx-config.js"
   },
   "private": true,
-  "pnpm": {
-    "onlyBuiltDependencies": ["@parcel/watcher", "@swc/core", "core-js", "esbuild", "nx"]
-  },
   "dependencies": {
     "@floating-ui/react": "^0.26.24",
     "@milkdown/crepe": "^7.18.0",

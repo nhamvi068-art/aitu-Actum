@@ -133,7 +133,8 @@ const IMAGE_API_COMPATIBILITY_OPTIONS: ImageApiCompatibility[] = [
   'auto',
   'openai-gpt-image',
   'tuzi-gpt-image',
-  'blt-gpt-image',
+  'gptbest-gpt-image',
+  'nanobanana',
   'openai-compatible-basic',
 ];
 
@@ -260,10 +261,13 @@ const IMAGE_API_COMPATIBILITY_META: Record<
     label: 'OpenAI GPT Image',
   },
   'tuzi-gpt-image': {
-    label: 'Tuzi GPT 兼容',
+    label: 'Blt GPT 兼容（旧版）',
   },
-  'blt-gpt-image': {
+  'gptbest-gpt-image': {
     label: 'Blt GPT 兼容',
+  },
+  'nanobanana': {
+    label: 'Nano-banana 图片兼容',
   },
   'openai-compatible-basic': {
     label: 'OpenAI-compatible 通用兼容（兜底）',
@@ -277,7 +281,8 @@ function normalizeImageApiCompatibilityForDisplay(
     value === 'auto' ||
     value === 'openai-gpt-image' ||
     value === 'tuzi-gpt-image' ||
-    value === 'blt-gpt-image' ||
+    value === 'gptbest-gpt-image' ||
+    value === 'nanobanana' ||
     value === 'openai-compatible-basic'
   ) {
     return value;
@@ -301,13 +306,6 @@ function resolveAutoImageApiCompatibilityForDisplay(
 
   if (normalizedBaseUrl.includes('.tu-zi.com')) {
     return 'tuzi-gpt-image';
-  }
-
-  if (
-    normalizedBaseUrl.includes('gpt-best.apifox.cn') ||
-    (normalizedBaseUrl.includes('.bltcy.ai') && !normalizedBaseUrl.includes('api.bltcy.ai'))
-  ) {
-    return 'blt-gpt-image';
   }
 
   return 'openai-compatible-basic';

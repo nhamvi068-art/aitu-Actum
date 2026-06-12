@@ -85,10 +85,8 @@ function buildProviderContext(
 }
 
 function findPriorityBinding(
-  bindings: ProviderModelBinding[],
-  profile: ProviderProfileSnapshot
+  bindings: ProviderModelBinding[]
 ): ProviderModelBinding | undefined {
-  if (!profile.preferAsyncImageEndpoint) return undefined;
   return bindings.find(
     (candidate) =>
       candidate.operation === 'image' &&
@@ -154,7 +152,7 @@ export class InvocationPlanner {
     );
     const priorityBinding = request.bindingId
       ? undefined
-      : findPriorityBinding(bindings, profile);
+      : findPriorityBinding(bindings);
     const binding = request.bindingId
       ? bindings.find((candidate) => candidate.id === request.bindingId)
       : priorityBinding

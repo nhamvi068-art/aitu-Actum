@@ -8,7 +8,9 @@ import type { ImageApiCompatibility } from '../../utils/settings-types';
 import {
   OFFICIAL_GPT_IMAGE_EDIT_REQUEST_SCHEMA,
   TUZI_GPT_IMAGE_EDIT_REQUEST_SCHEMA,
-  BLT_GPT_IMAGE_EDIT_REQUEST_SCHEMA,
+  GPTBEST_GPT_IMAGE_GENERATION_REQUEST_SCHEMA,
+  NANOBANANA_IMAGE_GENERATION_REQUEST_SCHEMA,
+  NANOBANANA_IMAGE_EDIT_REQUEST_SCHEMA,
 } from '../model-adapters/image-request-schemas';
 import { inferAllBindingHintsFromEndpoints } from './endpoint-binding-inference';
 import type { ProviderModelBinding, ProviderProfileSnapshot } from './types';
@@ -162,6 +164,19 @@ function isGptImageModel(model: ModelConfig): boolean {
   );
 }
 
+const NANOBANANA_MODEL_IDS = new Set([
+  'nano-banana-pro',
+  'nano-banana-pro-2k',
+  'nano-banana-pro-4k',
+  'gemini-3.1-flash-image-preview-512px',
+  'gemini-3.1-flash-image-preview-2k',
+  'gemini-3.1-flash-image-preview-4k',
+]);
+
+function isNanoBananaModel(model: ModelConfig): boolean {
+  return NANOBANANA_MODEL_IDS.has(model.id);
+}
+
 function isSeedanceModel(model: ModelConfig): boolean {
   return model.id.toLowerCase().includes('seedance');
 }
@@ -238,7 +253,7 @@ function isGptBestBaseUrl(baseUrl: string): boolean {
     const hostname = url.hostname.toLowerCase();
     return (
       hostname === 'gpt-best.apifox.cn' ||
-      (hostname.endsWith('.bltcy.ai') && hostname !== 'api.bltcy.ai')
+      hostname.endsWith('.bltcy.ai') && hostname !== 'api.bltcy.ai'
     );
   } catch {
     return false;
@@ -248,15 +263,16 @@ function isGptBestBaseUrl(baseUrl: string): boolean {
 function normalizeImageApiCompatibilityMode(
   value?: ImageApiCompatibility | string | null
 ): ImageApiCompatibility {
-    if (
-      value === 'auto' ||
-      value === 'openai-gpt-image' ||
-      value === 'tuzi-gpt-image' ||
-      value === 'blt-gpt-image' ||
-      value === 'openai-compatible-basic'
-    ) {
-      return value;
-    }
+  if (
+    value === 'auto' ||
+    value === 'openai-gpt-image' ||
+    value === 'tuzi-gpt-image' ||
+    value === 'gptbest-gpt-image' ||
+    value === 'nanobanana' ||
+    value === 'openai-compatible-basic'
+  ) {
+    return value;
+  }
 
   if (value === 'tuzi-compatible') {
     return 'tuzi-gpt-image';
@@ -281,22 +297,15 @@ function resolveImageApiCompatibility(
     return 'openai-gpt-image';
   }
 
+  if (isGptBestProfile(profile) && isGptImageModel(model)) {
+    return 'gptbest-gpt-image';
+  }
+
   if (isTuziProfile(profile) && isGptImageModel(model)) {
     return 'tuzi-gpt-image';
   }
 
-  if (isGptBestProfile(profile) && isGptImageModel(model)) {
-    return 'blt-gpt-image';
-  }
-
   return 'openai-compatible-basic';
-}
-
-function shouldPreferAsyncImageBinding(
-  profile: ProviderProfileSnapshot,
-  model: ModelConfig
-): boolean {
-  return !!profile.preferAsyncImageEndpoint && model.type === 'image';
 }
 
 function hasAnyTag(model: ModelConfig, candidates: string[]): boolean {
@@ -517,11 +526,11 @@ function inferImageBindings(
         resolvedImageApiCompatibility === 'tuzi-gpt-image'
       ? 'tuzi.image.gpt-generation-json'
       : isGptImageModel(model) &&
-        resolvedImageApiCompatibility === 'blt-gpt-image'
-      ? 'blt.image.gpt-generation-json'
+        resolvedImageApiCompatibility === 'gptbest-gpt-image'
+      ? 'gptbest.image.gpt-generation-json'
       : 'openai.image.basic-json';
 
-    if (shouldPreferAsyncImageBinding(profile, model)) {
+    if (!isMidjourneyModel(model) && isAsyncImageModel(model.id)) {
       bindings.push(
         buildBinding(profile, model, {
           protocol: 'openai.async.media',
@@ -536,7 +545,7 @@ function inferImageBindings(
       );
     }
 
-    if (!shouldPreferAsyncImageBinding(profile, model)) {
+    if (!isAsyncImageModel(model.id) || isSeedreamModel(model)) {
       bindings.push(
         buildBinding(profile, model, {
           protocol: 'openai.images.generations',
@@ -558,7 +567,7 @@ function inferImageBindings(
     }
 
     if (
-      !shouldPreferAsyncImageBinding(profile, model) &&
+      !isAsyncImageModel(model.id) &&
       isGptImageModel(model) &&
       resolvedImageApiCompatibility === 'openai-gpt-image'
     ) {
@@ -585,7 +594,7 @@ function inferImageBindings(
     }
 
     if (
-      !shouldPreferAsyncImageBinding(profile, model) &&
+      !isAsyncImageModel(model.id) &&
       isGptImageModel(model) &&
       resolvedImageApiCompatibility === 'tuzi-gpt-image'
     ) {
@@ -612,14 +621,14 @@ function inferImageBindings(
     }
 
     if (
-      !shouldPreferAsyncImageBinding(profile, model) &&
+      !isAsyncImageModel(model.id) &&
       isGptImageModel(model) &&
-      resolvedImageApiCompatibility === 'blt-gpt-image'
+      resolvedImageApiCompatibility === 'gptbest-gpt-image'
     ) {
       bindings.push(
         buildBinding(profile, model, {
           protocol: 'openai.images.generations',
-          requestSchema: BLT_GPT_IMAGE_EDIT_REQUEST_SCHEMA,
+          requestSchema: GPTBEST_GPT_IMAGE_GENERATION_REQUEST_SCHEMA,
           responseSchema: 'openai.image.data',
           submitPath: '/images/generations',
           metadata: {
@@ -632,6 +641,47 @@ function inferImageBindings(
             },
           },
           priority: genericPriority - 1,
+          confidence: genericConfidence,
+          source: 'template',
+        })
+      );
+    }
+
+    if (!isAsyncImageModel(model.id) && isNanoBananaModel(model)) {
+      bindings.push(
+        buildBinding(profile, model, {
+          protocol: 'openai.images.generations',
+          requestSchema: NANOBANANA_IMAGE_GENERATION_REQUEST_SCHEMA,
+          responseSchema: 'openai.image.data',
+          submitPath: '/images/generations',
+          metadata: {
+            image: {
+              action: 'generation',
+              imageApiCompatibility,
+              resolvedImageApiCompatibility: 'nanobanana',
+            },
+          },
+          priority: genericPriority + 10,
+          confidence: genericConfidence,
+          source: 'template',
+        })
+      );
+      bindings.push(
+        buildBinding(profile, model, {
+          protocol: 'openai.images.edits',
+          requestSchema: NANOBANANA_IMAGE_EDIT_REQUEST_SCHEMA,
+          responseSchema: 'openai.image.data',
+          submitPath: '/images/edits',
+          metadata: {
+            image: {
+              action: 'edit',
+              imageApiCompatibility,
+              resolvedImageApiCompatibility: 'nanobanana',
+              maxImageCount: 16,
+              supportsMask: false,
+            },
+          },
+          priority: genericPriority + 9,
           confidence: genericConfidence,
           source: 'template',
         })

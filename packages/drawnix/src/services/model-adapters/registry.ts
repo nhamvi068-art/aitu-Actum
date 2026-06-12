@@ -154,8 +154,11 @@ function resolveGPTImageAdapterForLegacyRoute(
 
   const route = resolveInvocationRoute('image', modelRef || modelId);
   const baseUrl = route.baseUrl.toLowerCase();
-  if (baseUrl.includes('.tu-zi.com') || baseUrl.includes('bltcy.ai')) {
+  if (baseUrl.includes('.tu-zi.com')) {
     return findImageAdapterBySchema('tuzi.image.gpt-generation-json');
+  }
+  if (baseUrl.includes('gpt-best.apifox.cn') || (baseUrl.includes('bltcy.ai') && !baseUrl.includes('api.bltcy.ai'))) {
+    return findImageAdapterBySchema('gptbest.image.gpt-generation-json');
   }
 
   return findImageAdapterBySchema('openai.image.gpt-generation-json');

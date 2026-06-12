@@ -17,7 +17,8 @@ export type ImageApiCompatibility =
   | 'auto'
   | 'openai-gpt-image'
   | 'tuzi-gpt-image'
-  | 'blt-gpt-image'
+  | 'gptbest-gpt-image'
+  | 'nanobanana'
   | 'openai-compatible-basic';
 
 export const DEFAULT_PROVIDER_IMAGE_API_COMPATIBILITY: ImageApiCompatibility =
@@ -44,7 +45,6 @@ export interface ProviderProfile {
   apiKey: string;
   authType: ProviderAuthType;
   imageApiCompatibility?: ImageApiCompatibility;
-  preferAsyncImageEndpoint?: boolean;
   extraHeaders?: Record<string, string>;
   enabled: boolean;
   capabilities: ProviderCapabilities;

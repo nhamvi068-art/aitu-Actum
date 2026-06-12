@@ -278,16 +278,8 @@ class AsyncImageAPIService {
       onProgress(immediateProgress, immediate.status);
     }
 
-    if (immediate.status === 'completed') {
+    if (immediate.status === 'completed' || immediate.status === 'failed') {
       return immediate;
-    }
-
-    if (immediate.status === 'failed') {
-      const message =
-        typeof immediate.error === 'string'
-          ? immediate.error
-          : (immediate.error as any)?.message || '图片生成失败';
-      throw new Error(message);
     }
 
     return this.pollUntilComplete(id, options);
@@ -342,16 +334,11 @@ class AsyncImageAPIService {
             typeof status.error === 'string'
               ? status.error
               : (status.error as any)?.message || '图片生成失败';
-          const err = new Error(message);
-          (err as any).isTaskFailed = true;
-          throw err;
+          throw new Error(message);
         }
 
         consecutiveErrors = 0; // reset on success
-      } catch (error: any) {
-        if (error?.isTaskFailed) {
-          throw error;
-        }
+      } catch (error) {
         consecutiveErrors += 1;
         if (consecutiveErrors >= maxConsecutiveErrors) {
           throw error;

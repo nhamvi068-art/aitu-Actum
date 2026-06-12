@@ -25,58 +25,6 @@ var sw = (function(exports) {
       // 10 minutes
     }
   });
-  const SENSITIVE_KEYS$1 = [
-    "apikey",
-    "api_key",
-    "password",
-    "token",
-    "secret",
-    "authorization",
-    "bearer",
-    "credential",
-    "key"
-  ];
-  function sanitizeObject$1(obj) {
-    if (!obj) return obj;
-    if (typeof obj === "string") {
-      if (obj.toLowerCase().startsWith("bearer ")) {
-        return "[REDACTED]";
-      }
-      return obj;
-    }
-    if (Array.isArray(obj)) {
-      return obj.map((item) => sanitizeObject$1(item));
-    }
-    if (typeof obj === "object") {
-      const result = {};
-      for (const [key, value] of Object.entries(obj)) {
-        const lowerKey = key.toLowerCase();
-        if (SENSITIVE_KEYS$1.some((k2) => lowerKey.includes(k2))) {
-          result[key] = "[REDACTED]";
-        } else {
-          result[key] = sanitizeObject$1(value);
-        }
-      }
-      return result;
-    }
-    return obj;
-  }
-  function sanitizeRequestBody(requestBody) {
-    if (!requestBody) return requestBody;
-    try {
-      const parsed = JSON.parse(requestBody);
-      const sanitized = sanitizeObject$1(parsed);
-      return JSON.stringify(sanitized);
-    } catch {
-      let result = requestBody;
-      result = result.replace(/Bearer\s+[a-zA-Z0-9-_]+/gi, "Bearer [REDACTED]");
-      result = result.replace(
-        /"(api[_-]?key|apikey|authorization|token|secret|password|credential)"\s*:\s*"[^"]+"/gi,
-        (match, key) => `"${key}": "[REDACTED]"`
-      );
-      return result;
-    }
-  }
   function getSafeErrorMessage(error) {
     if (error instanceof Error) {
       return error.name || "Error";
@@ -1585,42 +1533,6 @@ var sw = (function(exports) {
     }
     return logId;
   }
-  function logSentMessage(messageType, data, clientId, clientUrl) {
-    if (!shouldLogMessage(messageType)) {
-      return "";
-    }
-    const clientInfo = getClientInfo(clientUrl);
-    if (clientInfo.clientType === "debug") {
-      return "";
-    }
-    const logId = `pm-send-${Date.now()}-${++logIdCounter}`;
-    const entry = {
-      id: logId,
-      timestamp: Date.now(),
-      direction: "send",
-      messageType,
-      data: sanitizeData(data),
-      clientId,
-      clientUrl: clientInfo.clientUrl,
-      clientType: clientInfo.clientType
-    };
-    let linkedRequestId = null;
-    if (isResponseMessage(messageType)) {
-      const requestId = getRequestId(data);
-      if (requestId) {
-        const pending = pendingRequests.get(requestId);
-        if (pending) {
-          entry.duration = Date.now() - pending.startTime;
-          pending.entry.response = sanitizeData(data);
-          pending.entry.duration = entry.duration;
-          linkedRequestId = pending.entry.id;
-          pendingRequests.delete(requestId);
-        }
-      }
-    }
-    addLog(entry);
-    return linkedRequestId ? `${logId}|${linkedRequestId}` : logId;
-  }
   function addLog(entry) {
     logs.unshift(entry);
     if (logs.length > MAX_LOGS) {
@@ -1671,30 +1583,6 @@ var sw = (function(exports) {
     ];
     return requestPatterns.some((p2) => messageType.includes(p2));
   }
-  function isResponseMessage(messageType) {
-    if (messageType.endsWith(":response") || messageType.endsWith(":error")) {
-      return true;
-    }
-    const responsePatterns = [
-      "TASK_QUEUE_INITIALIZED",
-      "TASK_STATUS",
-      "TASK_COMPLETED",
-      "TASK_FAILED",
-      "TASK_CREATED",
-      "TASK_CANCELLED",
-      "TASK_DELETED",
-      "WORKFLOW_STATUS",
-      "WORKFLOW_STEP_STATUS",
-      "WORKFLOW_COMPLETED",
-      "WORKFLOW_FAILED",
-      "CHAT_CHUNK",
-      "CHAT_DONE",
-      "CHAT_ERROR",
-      "MCP_TOOL_RESULT",
-      "MAIN_THREAD_TOOL_RESPONSE"
-    ];
-    return responsePatterns.some((p2) => messageType.includes(p2));
-  }
   function getRequestId(data) {
     if (!data || typeof data !== "object") return null;
     const obj = data;
@@ -1736,7 +1624,6 @@ var sw = (function(exports) {
     getLogStats,
     isPostMessageLoggerDebugMode,
     logReceivedMessage,
-    logSentMessage,
     setPostMessageLoggerDebugMode,
     updateRequestWithResponse
   }, Symbol.toStringTag, { value: "Module" }));
@@ -3772,206 +3659,21 @@ var sw = (function(exports) {
     setPostMessageLoggerDebugMode(enabled);
   }
   const internalFetchLogs = [];
-  const MAX_INTERNAL_LOGS = 100;
   let debugModeEnabled$1 = false;
-  let broadcastCallback$1 = null;
   function setDebugFetchEnabled(enabled) {
     debugModeEnabled$1 = enabled;
   }
   function isDebugFetchEnabled() {
     return debugModeEnabled$1;
   }
-  function setDebugFetchBroadcast(callback) {
-    broadcastCallback$1 = callback;
-  }
   function getInternalFetchLogs() {
     return [...internalFetchLogs];
   }
-  function clearInternalFetchLogs() {
-    internalFetchLogs.length = 0;
-  }
-  function updateLogResponseBody(logId, responseBody) {
-    const log = internalFetchLogs.find((l2) => l2.id === logId);
-    if (log) {
-      log.responseBody = responseBody.length > 5e3 ? responseBody.substring(0, 5e3) + "...(truncated)" : responseBody;
-      if (broadcastCallback$1) {
-        broadcastCallback$1({ ...log });
-      }
-    }
-  }
-  async function blobToDataUrl(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-  async function parseFormData(formData) {
-    const fields = [];
-    for (const [name, value] of formData.entries()) {
-      if (value instanceof Blob) {
-        const field = {
-          name,
-          value: `[${value.type || "binary"}] ${value.size} bytes`,
-          isFile: true,
-          mimeType: value.type
-        };
-        if (value.type.startsWith("image/") && value.size < 5 * 1024 * 1024) {
-          try {
-            field.dataUrl = await blobToDataUrl(value);
-          } catch {
-          }
-        }
-        if (value instanceof File) {
-          field.fileName = value.name;
-        }
-        fields.push(field);
-      } else {
-        fields.push({
-          name,
-          value: String(value).length > 500 ? String(value).substring(0, 500) + "..." : String(value)
-        });
-      }
-    }
-    return fields;
-  }
-  async function debugFetch(input, init, options) {
-    if (!debugModeEnabled$1) {
-      return fetch(input, init);
-    }
-    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    const method = (init == null ? void 0 : init.method) || "GET";
-    const startTime = Date.now();
-    const id = Math.random().toString(36).substring(2, 10);
-    let requestBody;
-    let formData;
-    let base64Images;
-    if (init == null ? void 0 : init.body) {
-      if (init.body instanceof FormData) {
-        try {
-          formData = await parseFormData(init.body);
-        } catch {
-          requestBody = "[FormData - unable to parse]";
-        }
-      } else if (options == null ? void 0 : options.logRequestBody) {
-        try {
-          const bodyStr = typeof init.body === "string" ? init.body : JSON.stringify(init.body);
-          const imageRegex = /data:image\/([^;]+);base64,([A-Za-z0-9+/=]+)/g;
-          let match;
-          let imageIndex = 0;
-          base64Images = [];
-          while ((match = imageRegex.exec(bodyStr)) !== null) {
-            const mimeType = `image/${match[1]}`;
-            const base64Data = match[2];
-            if (base64Data.length > 1e3) {
-              base64Images.push({
-                key: `image[${imageIndex}]`,
-                dataUrl: `data:${mimeType};base64,${base64Data}`,
-                mimeType,
-                size: Math.round(base64Data.length * 0.75 / 1024)
-              });
-              imageIndex++;
-            }
-          }
-          if (base64Images.length === 0) {
-            base64Images = void 0;
-          }
-          let displayBody = bodyStr.replace(
-            /data:image\/([^;]+);base64,[A-Za-z0-9+/=]+/g,
-            (_2, mimeType) => `[📷 image/${mimeType}]`
-          );
-          displayBody = sanitizeRequestBody(displayBody);
-          const isChatEndpoint = url.includes("/chat/completions");
-          requestBody = !isChatEndpoint && displayBody.length > 3e3 ? displayBody.substring(0, 3e3) + "...(truncated)" : displayBody;
-        } catch {
-          requestBody = "[unable to serialize body]";
-        }
-      }
-    }
-    const log = {
-      id,
-      timestamp: startTime,
-      url,
-      method,
-      requestType: "sw-internal",
-      details: (options == null ? void 0 : options.label) || `SW Internal: ${method} ${new URL(url).pathname}`,
-      requestBody,
-      formData,
-      base64Images,
-      isStreaming: options == null ? void 0 : options.isStreaming
-    };
-    internalFetchLogs.unshift(log);
-    if (internalFetchLogs.length > MAX_INTERNAL_LOGS) {
-      internalFetchLogs.pop();
-    }
-    if (broadcastCallback$1) {
-      broadcastCallback$1({ ...log });
-    }
-    try {
-      const response = await fetch(input, init);
-      log.status = response.status;
-      log.statusText = response.statusText;
-      log.duration = Date.now() - startTime;
-      if (options == null ? void 0 : options.isStreaming) {
-        log.responseBody = "[流式响应 - 数据通过 SSE/Stream 实时传输，无法捕获完整响应体]";
-      } else if (options == null ? void 0 : options.logResponseBody) {
-        try {
-          const contentType = response.headers.get("content-type") || "";
-          if (contentType.includes("application/json") || contentType.includes("text/")) {
-            const clone = response.clone();
-            const text = await clone.text();
-            log.responseBody = text.length > 2e3 ? text.substring(0, 2e3) + "...(truncated)" : text;
-          }
-        } catch {
-        }
-      }
-      if (broadcastCallback$1) {
-        broadcastCallback$1({ ...log });
-      }
-      response.__debugLogId = id;
-      return response;
-    } catch (error) {
-      const errorMessage = error.message || String(error);
-      let errorType = "NETWORK_ERROR";
-      if (errorMessage.includes("ERR_CONNECTION_CLOSED")) {
-        errorType = "ERR_CONNECTION_CLOSED";
-      } else if (errorMessage.includes("ERR_CONNECTION_REFUSED")) {
-        errorType = "ERR_CONNECTION_REFUSED";
-      } else if (errorMessage.includes("ERR_CONNECTION_RESET")) {
-        errorType = "ERR_CONNECTION_RESET";
-      } else if (errorMessage.includes("ERR_CONNECTION_TIMED_OUT") || errorMessage.includes("timeout")) {
-        errorType = "ERR_TIMEOUT";
-      } else if (errorMessage.includes("ERR_NAME_NOT_RESOLVED")) {
-        errorType = "ERR_DNS_FAILED";
-      } else if (errorMessage.includes("ERR_INTERNET_DISCONNECTED")) {
-        errorType = "ERR_OFFLINE";
-      } else if (errorMessage.includes("ERR_SSL") || errorMessage.includes("certificate")) {
-        errorType = "ERR_SSL";
-      } else if (errorMessage.includes("Failed to fetch")) {
-        errorType = "FETCH_FAILED";
-      } else if (errorMessage.includes("AbortError") || errorMessage.includes("aborted")) {
-        errorType = "ABORTED";
-      }
-      log.status = 0;
-      log.statusText = errorType;
-      log.error = errorMessage;
-      log.duration = Date.now() - startTime;
-      if (broadcastCallback$1) {
-        broadcastCallback$1({ ...log });
-      }
-      throw error;
-    }
-  }
-  const debugFetch$1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  const debugFetch = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
     __proto__: null,
-    clearInternalFetchLogs,
-    debugFetch,
     getInternalFetchLogs,
     isDebugFetchEnabled,
-    setDebugFetchBroadcast,
-    setDebugFetchEnabled,
-    updateLogResponseBody
+    setDebugFetchEnabled
   }, Symbol.toStringTag, { value: "Module" }));
   const isDevelopment$1 = typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1");
   const CDN_CONFIG = {
@@ -4109,9 +3811,6 @@ var sw = (function(exports) {
     } catch (error) {
       console.warn("[CDN Fallback] Failed to persist CDN preference:", error);
     }
-  }
-  function getCDNPreference() {
-    return persistedCDNPreference;
   }
   function markCDNSuccess(cdnName) {
     const status = cdnHealthStatus.get(cdnName);
@@ -4448,13 +4147,6 @@ var sw = (function(exports) {
   function resetCDNStatus() {
     initHealthStatus(true);
   }
-  function getCDNConfig() {
-    return {
-      ...CDN_CONFIG,
-      sources: CDN_SOURCES,
-      preference: persistedCDNPreference
-    };
-  }
   const cdnFallback = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
     __proto__: null,
     buildCDNUrl,
@@ -4462,8 +4154,6 @@ var sw = (function(exports) {
     extractVersionFromCDNPath,
     fetchFromCDNWithFallback,
     getAvailableCDNs,
-    getCDNConfig,
-    getCDNPreference,
     getCDNStatusReport,
     isCDNAvailable,
     markCDNFailure,
@@ -4607,12 +4297,6 @@ var sw = (function(exports) {
   }
   let addConsoleLogLater = null;
   setupSWConsoleCapture();
-  setDebugFetchBroadcast((log) => {
-    const cm = getChannelManager();
-    if (cm) {
-      cm.sendDebugLog({ ...log, type: "fetch" });
-    }
-  });
   Promise.resolve().then(() => llmApiLogger).then(({ setLLMApiLogBroadcast: setLLMApiLogBroadcast2 }) => {
     setLLMApiLogBroadcast2((log) => {
       const cm = getChannelManager();
@@ -6799,7 +6483,7 @@ var sw = (function(exports) {
     if (event.data && event.data.type === "SW_DEBUG_GET_LOGS") {
       (async () => {
         try {
-          const { getInternalFetchLogs: getInternalFetchLogs2 } = await Promise.resolve().then(() => debugFetch$1);
+          const { getInternalFetchLogs: getInternalFetchLogs2 } = await Promise.resolve().then(() => debugFetch);
           const logs2 = getDebugLogs();
           const internalLogs = getInternalFetchLogs2();
           const client = event.source;
@@ -9296,33 +8980,6 @@ ${responseBody}`
       return null;
     }
   }
-  function getThumbnailUrl(originalUrl, size = "small") {
-    try {
-      const url = new URL(originalUrl, self.location.origin);
-      url.searchParams.set("thumbnail", size);
-      return url.toString();
-    } catch {
-      const separator = originalUrl.includes("?") ? "&" : "?";
-      return `${originalUrl}${separator}thumbnail=${size}`;
-    }
-  }
-  async function ensureThumbnail(originalUrl, type) {
-    try {
-      const cache = await caches.open("drawnix-images");
-      const cachedResponse = await cache.match(originalUrl);
-      if (cachedResponse) {
-        const blob = await cachedResponse.blob();
-        if (type === "image") {
-          await generateImageThumbnail(blob, originalUrl, ["small", "large"]);
-        } else {
-          await generateVideoThumbnail(blob, originalUrl, ["small", "large"]);
-        }
-      }
-    } catch (error) {
-      console.warn("[ThumbnailUtils] Failed to generate thumbnail on demand:", error);
-    }
-    return getThumbnailUrl(originalUrl, "small");
-  }
   async function findThumbnail(cacheKey, size, fallbackKeys) {
     try {
       const thumbCache = await caches.open(IMAGE_CACHE_NAME_THUMB);
@@ -9387,22 +9044,16 @@ ${responseBody}`
     __proto__: null,
     IMAGE_CACHE_NAME_THUMB,
     createThumbnailResponse,
-    ensureThumbnail,
     findThumbnail,
     findThumbnailWithFallback,
     generateImageThumbnail,
     generateThumbnailAsync,
-    generateVideoThumbnail,
-    getThumbnailUrl
+    generateVideoThumbnail
   }, Symbol.toStringTag, { value: "Module" }));
   const memoryLogs = [];
-  const MAX_MEMORY_LOGS = 50;
   const DB_NAME = "llm-api-logs";
   const DB_VERSION = 4;
   const STORE_NAME = "logs";
-  const MAX_DB_LOGS = 1e3;
-  const MAX_RESPONSE_BODY_LENGTH = 128 * 1024;
-  let broadcastCallback = null;
   function openDB() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -9429,44 +9080,6 @@ ${responseBody}`
         }
       };
     });
-  }
-  async function saveLogToDB(log) {
-    try {
-      const db = await openDB();
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
-      store.put(log);
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-      try {
-        const cleanTx = db.transaction(STORE_NAME, "readwrite");
-        const cleanStore = cleanTx.objectStore(STORE_NAME);
-        const countRequest = cleanStore.count();
-        countRequest.onsuccess = () => {
-          if (countRequest.result > MAX_DB_LOGS) {
-            const index = cleanStore.index("timestamp");
-            const deleteCount = countRequest.result - MAX_DB_LOGS;
-            let deleted = 0;
-            index.openCursor().onsuccess = (e2) => {
-              const cursor = e2.target.result;
-              if (cursor && deleted < deleteCount) {
-                cursor.delete();
-                deleted++;
-                cursor.continue();
-              }
-            };
-          }
-        };
-      } catch {
-      }
-    } catch (error) {
-      console.warn("[LLMApiLogger] Failed to save log to DB:", error);
-    }
-  }
-  async function updateLogInDB(log) {
-    await saveLogToDB(log);
   }
   async function getAllLLMApiLogs() {
     try {
@@ -9565,73 +9178,6 @@ ${responseBody}`
       return null;
     }
   }
-  async function findSuccessLogByTaskId(taskId) {
-    const memoryLog = memoryLogs.find(
-      (log) => log.taskId === taskId && log.status === "success" && log.resultUrl
-    );
-    if (memoryLog) {
-      return memoryLog;
-    }
-    try {
-      const db = await openDB();
-      const tx = db.transaction(STORE_NAME, "readonly");
-      const store = tx.objectStore(STORE_NAME);
-      const index = store.index("taskId");
-      return new Promise((resolve) => {
-        const request = index.getAll(taskId);
-        request.onsuccess = () => {
-          const results = request.result;
-          const successLog = results.filter((l2) => l2.status === "success" && l2.resultUrl).sort((a2, b) => b.timestamp - a2.timestamp)[0];
-          resolve(successLog || null);
-        };
-        request.onerror = () => {
-          resolve(null);
-        };
-      });
-    } catch (error) {
-      console.warn("[LLMApiLogger] Failed to find log by taskId:", error);
-      return null;
-    }
-  }
-  async function findLatestLogByTaskId(taskId) {
-    const memoryLog = memoryLogs.find((log) => log.taskId === taskId);
-    if (memoryLog) {
-      return memoryLog;
-    }
-    try {
-      const db = await openDB();
-      const tx = db.transaction(STORE_NAME, "readonly");
-      const store = tx.objectStore(STORE_NAME);
-      return new Promise((resolve) => {
-        let request;
-        let useIndex = false;
-        if (store.indexNames.contains("taskId")) {
-          const index = store.index("taskId");
-          request = index.getAll(taskId);
-          useIndex = true;
-        } else {
-          console.warn(
-            "[LLMApiLogger] taskId index not found, falling back to full scan"
-          );
-          request = store.getAll();
-        }
-        request.onsuccess = () => {
-          let results = request.result;
-          if (!useIndex) {
-            results = results.filter((log) => log.taskId === taskId);
-          }
-          const latestLog = results.sort((a2, b) => b.timestamp - a2.timestamp)[0];
-          resolve(latestLog || null);
-        };
-        request.onerror = () => {
-          resolve(null);
-        };
-      });
-    } catch (error) {
-      console.warn("[LLMApiLogger] Failed to find latest log by taskId:", error);
-      return null;
-    }
-  }
   async function clearAllLLMApiLogs() {
     memoryLogs.length = 0;
     try {
@@ -9682,164 +9228,15 @@ ${responseBody}`
     return deletedFromMemory;
   }
   function setLLMApiLogBroadcast(callback) {
-    broadcastCallback = callback;
-  }
-  function getMemoryLLMApiLogs() {
-    return [...memoryLogs];
-  }
-  function startLLMApiLog(params) {
-    const id = `llm-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const log = {
-      id,
-      timestamp: Date.now(),
-      endpoint: params.endpoint,
-      model: params.model,
-      taskType: params.taskType,
-      prompt: params.prompt ? truncatePrompt(params.prompt) : void 0,
-      // 对请求体进行脱敏处理，过滤 API Key 等敏感信息
-      requestBody: params.requestBody ? sanitizeRequestBody(params.requestBody) : void 0,
-      hasReferenceImages: params.hasReferenceImages,
-      referenceImageCount: params.referenceImageCount,
-      referenceImages: params.referenceImages,
-      status: "pending",
-      taskId: params.taskId,
-      workflowId: params.workflowId
-    };
-    memoryLogs.unshift(log);
-    if (memoryLogs.length > MAX_MEMORY_LOGS) {
-      memoryLogs.pop();
-    }
-    saveLogToDB(log);
-    if (broadcastCallback) {
-      broadcastCallback({ ...log });
-    }
-    return id;
-  }
-  function completeLLMApiLog(logId, params) {
-    const log = memoryLogs.find((l2) => l2.id === logId);
-    if (log) {
-      log.status = "success";
-      log.httpStatus = params.httpStatus;
-      log.duration = params.duration;
-      log.resultType = params.resultType;
-      log.resultCount = params.resultCount;
-      log.resultUrl = params.resultUrl;
-      log.resultText = params.resultText ? truncateText(params.resultText, 1e3) : void 0;
-      log.responseBody = params.responseBody ? truncateResponseBody(params.responseBody) : void 0;
-      if (params.remoteId) log.remoteId = params.remoteId;
-      updateLogInDB(log);
-      if (broadcastCallback) {
-        broadcastCallback({ ...log });
-      }
-    }
-  }
-  function updateLLMApiLogMetadata(logId, params) {
-    const log = memoryLogs.find((l2) => l2.id === logId);
-    if (log) {
-      if (params.remoteId) log.remoteId = params.remoteId;
-      if (params.responseBody)
-        log.responseBody = truncateResponseBody(params.responseBody);
-      if (params.httpStatus) log.httpStatus = params.httpStatus;
-      updateLogInDB(log);
-      if (broadcastCallback) {
-        broadcastCallback({ ...log });
-      }
-    }
-  }
-  function failLLMApiLog(logId, params) {
-    const log = memoryLogs.find((l2) => l2.id === logId);
-    if (log) {
-      log.status = "error";
-      log.httpStatus = params.httpStatus;
-      log.duration = params.duration;
-      log.errorMessage = truncateError(params.errorMessage);
-      log.responseBody = params.responseBody ? truncateResponseBody(params.responseBody) : void 0;
-      if (params.remoteId) log.remoteId = params.remoteId;
-      updateLogInDB(log);
-      if (broadcastCallback) {
-        broadcastCallback({ ...log });
-      }
-    }
-  }
-  function truncatePrompt(prompt) {
-    if (prompt.length <= 2e3) return prompt;
-    return prompt.substring(0, 2e3) + "...";
-  }
-  function truncateText(text, maxLength) {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "...";
-  }
-  function truncateResponseBody(text) {
-    if (text.length <= MAX_RESPONSE_BODY_LENGTH) return text;
-    return `${text.substring(
-      0,
-      MAX_RESPONSE_BODY_LENGTH
-    )}
-... [response truncated for log storage]`;
-  }
-  function truncateError(error) {
-    if (error.length <= 500) return error;
-    return error.substring(0, 500) + "...";
-  }
-  async function llmFetch(input, init, meta) {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    const endpoint = new URL(url).pathname;
-    const startTime = Date.now();
-    const logId = startLLMApiLog({
-      endpoint,
-      model: meta.model,
-      taskType: meta.taskType,
-      prompt: meta.prompt,
-      hasReferenceImages: meta.hasReferenceImages,
-      referenceImageCount: meta.referenceImageCount,
-      referenceImages: meta.referenceImages,
-      taskId: meta.taskId,
-      workflowId: meta.workflowId
-    });
-    try {
-      const response = await fetch(input, init);
-      const duration = Date.now() - startTime;
-      if (response.ok) {
-        completeLLMApiLog(logId, {
-          httpStatus: response.status,
-          duration,
-          resultType: meta.taskType === "image" ? "image" : meta.taskType === "video" ? "video" : "text",
-          resultCount: 1
-        });
-      } else {
-        const errorText = await response.clone().text().catch(() => "Unknown error");
-        failLLMApiLog(logId, {
-          httpStatus: response.status,
-          duration,
-          errorMessage: errorText
-        });
-      }
-      return response;
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      failLLMApiLog(logId, {
-        duration,
-        errorMessage: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
   }
   const llmApiLogger = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
     __proto__: null,
     clearAllLLMApiLogs,
-    completeLLMApiLog,
     deleteLLMApiLogs,
-    failLLMApiLog,
-    findLatestLogByTaskId,
-    findSuccessLogByTaskId,
     getAllLLMApiLogs,
     getLLMApiLogById,
     getLLMApiLogsPaginated,
-    getMemoryLLMApiLogs,
-    llmFetch,
-    setLLMApiLogBroadcast,
-    startLLMApiLog,
-    updateLLMApiLogMetadata
+    setLLMApiLogBroadcast
   }, Symbol.toStringTag, { value: "Module" }));
   exports.APP_VERSION = APP_VERSION;
   exports.IMAGE_CACHE_NAME = IMAGE_CACHE_NAME;
