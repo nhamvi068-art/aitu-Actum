@@ -1,0 +1,6 @@
+refactor: sync Tuzi GPT image adapter and gpt-image-adapter from opentu-main
+
+- settings-dialog: rename "Blt GPT 兼容（旧版）" to "Tuzi GPT 兼容"
+- gpt-image-adapter: response_format only written when explicitly provided
+- gpt-image-adapter: fix resolveGPTImagePath to not route non-edit to /images/edits
+- gpt-image-adapter: add console.debug logging for adapter routing debugging

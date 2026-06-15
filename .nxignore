@@ -1,0 +1,5 @@
+# Exclude excalidraw directory from Nx processing
+excalidraw
+apps/web-e2e/src/manual-gen
+apps/web-e2e/src/smoke
+apps/web-e2e/src/utils/doc-metadata.ts

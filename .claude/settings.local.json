@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(nx typecheck:*)",
+      "Bash(pnpm exec nx typecheck:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm nx typecheck:*)",
+      "Bash(pnpm run build)",
+      "Bash(git commit:*)",
+      "Bash(grep:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm check:*)",
+      "Bash(git add:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git push:*)",
+      "Bash(npx eslint:*)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
+  "enableAllProjectMcpServers": true
+}
