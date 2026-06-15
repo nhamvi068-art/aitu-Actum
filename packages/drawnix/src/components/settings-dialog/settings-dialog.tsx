@@ -22,7 +22,6 @@ import {
   Eye,
   EyeOff,
   FlaskConical,
-  Link2,
   Loader2,
   Search,
   Trash2,
@@ -64,7 +63,11 @@ import {
   invocationPresetsSettings,
   LEGACY_DEFAULT_PROVIDER_PROFILE_ID,
   providerProfilesSettings,
+  TUZI_BUSINESS_PROVIDER_PROFILE_ID,
   settingsManager,
+  TUZI_MIX_PROVIDER_PROFILE_ID,
+  TUZI_CODEX_PROVIDER_PROFILE_ID,
+  TUZI_ORIGINAL_PROVIDER_PROFILE_ID,
   TUZI_PROVIDER_DEFAULT_BASE_URL,
   type ImageApiCompatibility,
   type InvocationPreset,
@@ -133,8 +136,6 @@ const IMAGE_API_COMPATIBILITY_OPTIONS: ImageApiCompatibility[] = [
   'auto',
   'openai-gpt-image',
   'tuzi-gpt-image',
-  'gptbest-gpt-image',
-  'nanobanana',
   'openai-compatible-basic',
 ];
 
@@ -263,12 +264,6 @@ const IMAGE_API_COMPATIBILITY_META: Record<
   'tuzi-gpt-image': {
     label: 'Tuzi GPT 兼容',
   },
-  'gptbest-gpt-image': {
-    label: 'Blt GPT 兼容',
-  },
-  'nanobanana': {
-    label: 'Nano-banana 图片兼容',
-  },
   'openai-compatible-basic': {
     label: 'OpenAI-compatible 通用兼容（兜底）',
   },
@@ -281,8 +276,6 @@ function normalizeImageApiCompatibilityForDisplay(
     value === 'auto' ||
     value === 'openai-gpt-image' ||
     value === 'tuzi-gpt-image' ||
-    value === 'gptbest-gpt-image' ||
-    value === 'nanobanana' ||
     value === 'openai-compatible-basic'
   ) {
     return value;
@@ -527,7 +520,13 @@ function inferAuthTypeForProviderType(
 }
 
 function isManagedProviderProfile(profileId: string): boolean {
-  return profileId === LEGACY_DEFAULT_PROVIDER_PROFILE_ID;
+  return (
+    profileId === LEGACY_DEFAULT_PROVIDER_PROFILE_ID ||
+    profileId === TUZI_ORIGINAL_PROVIDER_PROFILE_ID ||
+    profileId === TUZI_MIX_PROVIDER_PROFILE_ID ||
+    profileId === TUZI_CODEX_PROVIDER_PROFILE_ID ||
+    profileId === TUZI_BUSINESS_PROVIDER_PROFILE_ID
+  );
 }
 
 const ProviderAvatar = ({
@@ -690,10 +689,6 @@ export const SettingsDialog = ({
     new Set()
   );
   const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
-  const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [connectionTestResult, setConnectionTestResult] = useState<
-    'success' | 'error' | null
-  >(null);
 
   const toggleGroupCollapse = (type: ModelType) => {
     setCollapsedGroups((prev) => {
@@ -1429,38 +1424,6 @@ export const SettingsDialog = ({
     });
     void persistPresetConfiguration(nextPresets, activePresetIdDraft);
   };
-
-  const handleTestConnection = useCallback(async () => {
-    if (!selectedProfile) {
-      return;
-    }
-    setIsTestingConnection(true);
-    setConnectionTestResult(null);
-    try {
-      const baseUrl = normalizeModelApiBaseUrl(
-        selectedProfile.baseUrl.trim() || TUZI_PROVIDER_DEFAULT_BASE_URL
-      );
-      const response = await fetch(`${baseUrl}/models`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${selectedProfile.apiKey.trim()}`,
-        },
-      });
-      if (response.ok) {
-        setConnectionTestResult('success');
-      } else {
-        setConnectionTestResult('error');
-        MessagePlugin.error(`连接失败: ${response.status} ${response.statusText}`);
-      }
-    } catch (err) {
-      setConnectionTestResult('error');
-      const msg = err instanceof Error ? err.message : '网络错误';
-      MessagePlugin.error(`连接失败: ${msg}`);
-    } finally {
-      setIsTestingConnection(false);
-    }
-  }, [selectedProfile]);
 
   const handleFetchModels = async () => {
     if (!selectedProfile) {
@@ -2251,6 +2214,33 @@ export const SettingsDialog = ({
               </span>
             </div>
 
+            <div className="settings-dialog__field settings-dialog__field--full" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <label className="settings-dialog__label" style={{ margin: 0 }}>
+                图片优先使用异步接口（实验功能，建议不要开，还未上线）
+              </label>
+              <Switch
+                size="small"
+                value={selectedProfile.preferAsyncImageEndpoint ?? false}
+                onChange={(checked) => {
+                  const value = checked as boolean;
+                  updateProfile(selectedProfile.id, (profile) => ({
+                    ...profile,
+                    preferAsyncImageEndpoint: value,
+                  }));
+                  providerProfilesSettings.update(
+                    cloneValue(providerProfilesSettings.get()).map((profile) =>
+                      profile.id === selectedProfile.id
+                        ? { ...profile, preferAsyncImageEndpoint: value }
+                        : profile
+                    )
+                  );
+                }}
+              />
+              <span className="settings-dialog__field-hint" style={{ width: '100%' }}>
+                开启后，支持异步接口的图片模型将优先使用 /v1/videos 异步接口生成
+              </span>
+            </div>
+
             <div className="settings-dialog__field settings-dialog__field--column settings-dialog__field--full">
               <label className="settings-dialog__label settings-dialog__label--stacked">
                 图标 URL
@@ -2276,77 +2266,18 @@ export const SettingsDialog = ({
               <label className="settings-dialog__label settings-dialog__label--stacked">
                 API 地址
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="text"
-                  className="settings-dialog__input"
-                  value={selectedProfile.baseUrl}
-                  onChange={(event) => {
-                    updateProfile(selectedProfile.id, (profile) => ({
-                      ...profile,
-                      baseUrl: event.target.value,
-                    }));
-                    setConnectionTestResult(null);
-                  }}
-                  placeholder={TUZI_PROVIDER_DEFAULT_BASE_URL}
-                  style={{ flex: 1 }}
-                />
-                <button
-                  type="button"
-                  className="settings-dialog__ghost-button"
-                  style={{
-                    whiteSpace: 'nowrap',
-                    height: 32,
-                    padding: '0 12px',
-                    flexShrink: 0,
-                  }}
-                  onClick={handleTestConnection}
-                  disabled={isTestingConnection}
-                >
-                  {isTestingConnection ? (
-                    <>
-                      <Loader2
-                        size={14}
-                        style={{ animation: 'settings-dialog-spin 0.9s linear infinite', marginRight: 4 }}
-                      />
-                      测试中
-                    </>
-                  ) : connectionTestResult === 'success' ? (
-                    <>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          backgroundColor: '#00a854',
-                          marginRight: 4,
-                        }}
-                      />
-                      已连接
-                    </>
-                  ) : connectionTestResult === 'error' ? (
-                    <>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          backgroundColor: '#e50000',
-                          marginRight: 4,
-                        }}
-                      />
-                      连接失败
-                    </>
-                  ) : (
-                    <>
-                      <Link2 size={14} style={{ marginRight: 4 }} />
-                      测试连接
-                    </>
-                  )}
-                </button>
-              </div>
+              <input
+                type="text"
+                className="settings-dialog__input"
+                value={selectedProfile.baseUrl}
+                onChange={(event) =>
+                  updateProfile(selectedProfile.id, (profile) => ({
+                    ...profile,
+                    baseUrl: event.target.value,
+                  }))
+                }
+                placeholder={TUZI_PROVIDER_DEFAULT_BASE_URL}
+              />
             </div>
 
             <div className="settings-dialog__field settings-dialog__field--column settings-dialog__field--full">
@@ -2863,12 +2794,24 @@ export const SettingsDialog = ({
                 .getState(profile.id)
                 .models.filter((model) => model.type === routeType);
 
-        const selectableModels = sourceModels.filter((model) => model.sourceProfileId);
-
-        const uniqueModels = selectableModels.filter(
+        const uniqueModels = sourceModels.filter(
           (model, index, list) =>
             list.findIndex((item) => item.id === model.id) === index
         );
+
+        if (
+          profile.id === currentProfileId &&
+          currentModelId &&
+          !uniqueModels.some((model) => model.id === currentModelId)
+        ) {
+          uniqueModels.unshift({
+            id: currentModelId,
+            label: currentModelId,
+            shortLabel: currentModelId,
+            type: routeType,
+            vendor: ModelVendor.OTHER,
+          });
+        }
 
         return {
           profile,

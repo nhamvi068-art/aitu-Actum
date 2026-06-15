@@ -14,7 +14,6 @@ import {
   IMAGE_MODEL_MORE_OPTIONS,
   IMAGE_MODEL_VIP_OPTIONS,
   VIDEO_MODELS,
-  isAsyncImageModel,
   ModelVendor,
 } from '../../constants/model-config';
 import type { UploadedVideoImage } from '../../types/video.types';
@@ -34,7 +33,8 @@ import { registerMJImageAdapter } from './mj-image-adapter';
 import { registerFluxAdapter } from './flux-adapter';
 import { registerSeedreamAdapter } from './seedream-adapter';
 import { registerSeedanceAdapter } from './seedance-adapter';
-import { registerNanoBananaAdapter } from './nano-banana-adapter';
+import { registerGPTImageAdapter } from './gpt-image-adapter';
+import { registerTuziGPTImageAdapter } from './tuzi-gpt-image-adapter';
 import {
   isGPTImage2Model,
   resolveImageResolutionTier,
@@ -47,7 +47,7 @@ const imageModelIds = [...IMAGE_MODEL_VIP_OPTIONS, ...IMAGE_MODEL_MORE_OPTIONS]
       !modelId.startsWith('mj-') &&
       !modelId.startsWith('bfl-flux-') &&
       !modelId.startsWith('flux-kontext-') &&
-      !modelId.includes('seedream') // 所有 Seedream 统一由 seedream-adapter 处理
+      !modelId.includes('seedream')
   );
 
 const videoModelIds = VIDEO_MODELS.map((model) => model.id).filter(
@@ -58,6 +58,11 @@ const videoModelIds = VIDEO_MODELS.map((model) => model.id).filter(
 );
 
 const audioModelIds = AUDIO_MODELS.map((model) => model.id);
+
+function isGptImageModel(model: string): boolean {
+  const lowerId = model.toLowerCase();
+  return lowerId.startsWith('gpt-image') || lowerId.includes('gpt-image');
+}
 
 const extractImageUrl = (
   response: any,
@@ -124,10 +129,9 @@ const toUploadedVideoImages = (
 
 function shouldUseAsyncImageEndpoint(
   context: AdapterContext,
-  model: string
+  _model: string
 ): boolean {
   return (
-    isAsyncImageModel(model) ||
     context.binding?.protocol === 'openai.async.media' ||
     context.binding?.requestSchema === 'openai.async.image.form'
   );
@@ -186,16 +190,26 @@ export const geminiImageAdapter: ImageModelAdapter = {
       | 'b64_json'
       | undefined;
 
-    const result = await defaultGeminiClient.generateImage(request.prompt, {
+    const imageOptions: Parameters<
+      typeof defaultGeminiClient.generateImage
+    >[1] = {
       size: request.size,
       image: request.referenceImages,
-      response_format: responseFormat || 'url',
+      omitDefaultResponseFormat: isGptImageModel(model),
       quality,
       count:
         typeof request.params?.n === 'number' ? request.params.n : undefined,
       model,
       modelRef: request.modelRef || null,
-    });
+    };
+    if (responseFormat) {
+      imageOptions.response_format = responseFormat;
+    }
+
+    const result = await defaultGeminiClient.generateImage(
+      request.prompt,
+      imageOptions
+    );
 
     return extractImageUrl(result, request.prompt);
   },
@@ -322,7 +336,8 @@ export const sunoAudioAdapter: AudioModelAdapter = {
 };
 
 export function registerDefaultModelAdapters(): void {
-  registerNanoBananaAdapter();
+  registerGPTImageAdapter();
+  registerTuziGPTImageAdapter();
   registerModelAdapter(geminiImageAdapter);
   registerHappyHorseAdapter();
   registerModelAdapter(geminiVideoAdapter);

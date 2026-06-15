@@ -8,9 +8,6 @@ import type { ImageApiCompatibility } from '../../utils/settings-types';
 import {
   OFFICIAL_GPT_IMAGE_EDIT_REQUEST_SCHEMA,
   TUZI_GPT_IMAGE_EDIT_REQUEST_SCHEMA,
-  GPTBEST_GPT_IMAGE_GENERATION_REQUEST_SCHEMA,
-  NANOBANANA_IMAGE_GENERATION_REQUEST_SCHEMA,
-  NANOBANANA_IMAGE_EDIT_REQUEST_SCHEMA,
 } from '../model-adapters/image-request-schemas';
 import { inferAllBindingHintsFromEndpoints } from './endpoint-binding-inference';
 import type { ProviderModelBinding, ProviderProfileSnapshot } from './types';
@@ -164,21 +161,15 @@ function isGptImageModel(model: ModelConfig): boolean {
   );
 }
 
-const NANOBANANA_MODEL_IDS = new Set([
-  'nano-banana-pro',
-  'nano-banana-pro-2k',
-  'nano-banana-pro-4k',
-  'gemini-3.1-flash-image-preview-512px',
-  'gemini-3.1-flash-image-preview-2k',
-  'gemini-3.1-flash-image-preview-4k',
-]);
-
-function isNanoBananaModel(model: ModelConfig): boolean {
-  return NANOBANANA_MODEL_IDS.has(model.id);
-}
-
 function isSeedanceModel(model: ModelConfig): boolean {
   return model.id.toLowerCase().includes('seedance');
+}
+
+function shouldPreferAsyncImageBinding(
+  profile: ProviderProfileSnapshot,
+  model: ModelConfig
+): boolean {
+  return !!profile.preferAsyncImageEndpoint && model.type === 'image';
 }
 
 function isHappyHorseModel(model: ModelConfig): boolean {
@@ -215,10 +206,6 @@ function isTuziProfile(profile: ProviderProfileSnapshot): boolean {
   return isTuziBaseUrl(profile.baseUrl);
 }
 
-function isGptBestProfile(profile: ProviderProfileSnapshot): boolean {
-  return isGptBestBaseUrl(profile.baseUrl);
-}
-
 function isTuziBaseUrl(baseUrl: string): boolean {
   const normalizedBaseUrl = baseUrl.trim().toLowerCase();
   if (!normalizedBaseUrl) {
@@ -238,28 +225,6 @@ function isTuziBaseUrl(baseUrl: string): boolean {
   }
 }
 
-function isGptBestBaseUrl(baseUrl: string): boolean {
-  const normalizedBaseUrl = baseUrl.trim().toLowerCase();
-  if (!normalizedBaseUrl) {
-    return false;
-  }
-
-  try {
-    const url = new URL(
-      /^[a-z][a-z\d+\-.]*:\/\//i.test(normalizedBaseUrl)
-        ? normalizedBaseUrl
-        : `https://${normalizedBaseUrl}`
-    );
-    const hostname = url.hostname.toLowerCase();
-    return (
-      hostname === 'gpt-best.apifox.cn' ||
-      hostname.endsWith('.bltcy.ai') && hostname !== 'api.bltcy.ai'
-    );
-  } catch {
-    return false;
-  }
-}
-
 function normalizeImageApiCompatibilityMode(
   value?: ImageApiCompatibility | string | null
 ): ImageApiCompatibility {
@@ -267,8 +232,6 @@ function normalizeImageApiCompatibilityMode(
     value === 'auto' ||
     value === 'openai-gpt-image' ||
     value === 'tuzi-gpt-image' ||
-    value === 'gptbest-gpt-image' ||
-    value === 'nanobanana' ||
     value === 'openai-compatible-basic'
   ) {
     return value;
@@ -295,10 +258,6 @@ function resolveImageApiCompatibility(
 
   if (isOfficialOpenAIProfile(profile) && isGptImageModel(model)) {
     return 'openai-gpt-image';
-  }
-
-  if (isGptBestProfile(profile) && isGptImageModel(model)) {
-    return 'gptbest-gpt-image';
   }
 
   if (isTuziProfile(profile) && isGptImageModel(model)) {
@@ -525,12 +484,9 @@ function inferImageBindings(
       : isGptImageModel(model) &&
         resolvedImageApiCompatibility === 'tuzi-gpt-image'
       ? 'tuzi.image.gpt-generation-json'
-      : isGptImageModel(model) &&
-        resolvedImageApiCompatibility === 'gptbest-gpt-image'
-      ? 'gptbest.image.gpt-generation-json'
       : 'openai.image.basic-json';
 
-    if (!isMidjourneyModel(model) && isAsyncImageModel(model.id)) {
+    if (shouldPreferAsyncImageBinding(profile, model)) {
       bindings.push(
         buildBinding(profile, model, {
           protocol: 'openai.async.media',
@@ -545,7 +501,7 @@ function inferImageBindings(
       );
     }
 
-    if (!isAsyncImageModel(model.id) || isSeedreamModel(model)) {
+    if (!shouldPreferAsyncImageBinding(profile, model)) {
       bindings.push(
         buildBinding(profile, model, {
           protocol: 'openai.images.generations',
@@ -567,7 +523,7 @@ function inferImageBindings(
     }
 
     if (
-      !isAsyncImageModel(model.id) &&
+      !shouldPreferAsyncImageBinding(profile, model) &&
       isGptImageModel(model) &&
       resolvedImageApiCompatibility === 'openai-gpt-image'
     ) {
@@ -594,7 +550,7 @@ function inferImageBindings(
     }
 
     if (
-      !isAsyncImageModel(model.id) &&
+      !shouldPreferAsyncImageBinding(profile, model) &&
       isGptImageModel(model) &&
       resolvedImageApiCompatibility === 'tuzi-gpt-image'
     ) {
@@ -614,74 +570,6 @@ function inferImageBindings(
             },
           },
           priority: genericPriority - 1,
-          confidence: genericConfidence,
-          source: 'template',
-        })
-      );
-    }
-
-    if (
-      !isAsyncImageModel(model.id) &&
-      isGptImageModel(model) &&
-      resolvedImageApiCompatibility === 'gptbest-gpt-image'
-    ) {
-      bindings.push(
-        buildBinding(profile, model, {
-          protocol: 'openai.images.generations',
-          requestSchema: GPTBEST_GPT_IMAGE_GENERATION_REQUEST_SCHEMA,
-          responseSchema: 'openai.image.data',
-          submitPath: '/images/generations',
-          metadata: {
-            image: {
-              action: 'edit',
-              imageApiCompatibility,
-              resolvedImageApiCompatibility,
-              maxImageCount: 16,
-              supportsMask: false,
-            },
-          },
-          priority: genericPriority - 1,
-          confidence: genericConfidence,
-          source: 'template',
-        })
-      );
-    }
-
-    if (!isAsyncImageModel(model.id) && isNanoBananaModel(model)) {
-      bindings.push(
-        buildBinding(profile, model, {
-          protocol: 'openai.images.generations',
-          requestSchema: NANOBANANA_IMAGE_GENERATION_REQUEST_SCHEMA,
-          responseSchema: 'openai.image.data',
-          submitPath: '/images/generations',
-          metadata: {
-            image: {
-              action: 'generation',
-              imageApiCompatibility,
-              resolvedImageApiCompatibility: 'nanobanana',
-            },
-          },
-          priority: genericPriority + 10,
-          confidence: genericConfidence,
-          source: 'template',
-        })
-      );
-      bindings.push(
-        buildBinding(profile, model, {
-          protocol: 'openai.images.edits',
-          requestSchema: NANOBANANA_IMAGE_EDIT_REQUEST_SCHEMA,
-          responseSchema: 'openai.image.data',
-          submitPath: '/images/edits',
-          metadata: {
-            image: {
-              action: 'edit',
-              imageApiCompatibility,
-              resolvedImageApiCompatibility: 'nanobanana',
-              maxImageCount: 16,
-              supportsMask: false,
-            },
-          },
-          priority: genericPriority + 9,
           confidence: genericConfidence,
           source: 'template',
         })
@@ -910,7 +798,7 @@ function shouldUseDiscoveredEndpointHintForModel(
   }
 
   if (hint.protocol === 'openai.async.media') {
-    return model.type === 'image';
+    return model.type === 'image' && !!profile.preferAsyncImageEndpoint;
   }
 
   if (hint.protocol === 'openai.async.video') {

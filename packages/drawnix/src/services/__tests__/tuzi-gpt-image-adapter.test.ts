@@ -31,7 +31,7 @@ describe('tuzi GPT image adapter', () => {
           n: 2,
         },
       })
-    )    .toEqual({
+    ).toEqual({
       model: 'gpt-image-2',
       prompt: 'Draw a clean product photo',
       size: '3840x2160',
@@ -51,7 +51,7 @@ describe('tuzi GPT image adapter', () => {
           quality: '2k',
         },
       })
-    )    .toEqual({
+    ).toEqual({
       model: 'gpt-image-2',
       prompt: 'Draw a clean product photo',
       size: '2368x1776',
@@ -102,6 +102,7 @@ describe('tuzi GPT image adapter', () => {
       size: '1360x768',
       quality: 'high',
     });
+    expect(JSON.parse(request.body).response_format).toBeUndefined();
     expect(result).toMatchObject({
       url: 'https://example.com/tuzi.png',
       format: 'png',
@@ -205,5 +206,6 @@ describe('tuzi GPT image adapter', () => {
       size: '2736x1536',
       image: ['data:image/png;base64,source'],
     });
+    expect(JSON.parse(request.body).response_format).toBeUndefined();
   });
 });

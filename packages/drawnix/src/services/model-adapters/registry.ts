@@ -90,7 +90,8 @@ export function resolveAdapterForModel(
     if (adapter.matchModels?.includes(modelId)) return true;
 
     // 3) 自定义匹配函数
-    if (adapter.matchPredicate && adapter.matchPredicate(modelConfig)) return true;
+    if (adapter.matchPredicate && adapter.matchPredicate(modelConfig))
+      return true;
 
     // 4) 标签匹配
     if (
@@ -156,9 +157,6 @@ function resolveGPTImageAdapterForLegacyRoute(
   const baseUrl = route.baseUrl.toLowerCase();
   if (baseUrl.includes('.tu-zi.com')) {
     return findImageAdapterBySchema('tuzi.image.gpt-generation-json');
-  }
-  if (baseUrl.includes('gpt-best.apifox.cn') || (baseUrl.includes('bltcy.ai') && !baseUrl.includes('api.bltcy.ai'))) {
-    return findImageAdapterBySchema('gptbest.image.gpt-generation-json');
   }
 
   return findImageAdapterBySchema('openai.image.gpt-generation-json');
