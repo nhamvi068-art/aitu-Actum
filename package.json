@@ -5,6 +5,7 @@
   "engines": {
     "node": ">=18"
   },
+  "packageManager": "pnpm@11.7.0",
   "description": "Opentu - An open-source whiteboard tool with AI-powered image/video creation, mind mapping, flowcharts, and freehand drawing",
   "homepage": "https://opentu.ai",
   "repository": {
