@@ -34,8 +34,6 @@ import { registerMJImageAdapter } from './mj-image-adapter';
 import { registerFluxAdapter } from './flux-adapter';
 import { registerSeedreamAdapter } from './seedream-adapter';
 import { registerSeedanceAdapter } from './seedance-adapter';
-import { registerGPTImageAdapter } from './gpt-image-adapter';
-import { registerTuziGPTImageAdapter } from './tuzi-gpt-image-adapter';
 import { registerNanoBananaAdapter } from './nano-banana-adapter';
 import {
   isGPTImage2Model,
@@ -325,8 +323,6 @@ export const sunoAudioAdapter: AudioModelAdapter = {
 
 export function registerDefaultModelAdapters(): void {
   registerNanoBananaAdapter();
-  registerGPTImageAdapter();
-  registerTuziGPTImageAdapter();
   registerModelAdapter(geminiImageAdapter);
   registerHappyHorseAdapter();
   registerModelAdapter(geminiVideoAdapter);

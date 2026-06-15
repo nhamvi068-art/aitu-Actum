@@ -10,7 +10,6 @@ export * from './flux-adapter';
 export * from './gpt-image-adapter';
 export * from './seedream-adapter';
 export * from './seedance-adapter';
-export * from './tuzi-gpt-image-adapter';
 export * from './nano-banana-adapter';
 export * from './image-request-schemas';
 export * from './context';

@@ -128,25 +128,12 @@ export async function executeImageViaAdapter(
   try {
     let processedImages: string[] | undefined;
     if (params.referenceImages && params.referenceImages.length > 0) {
-      const results = await Promise.allSettled(
+      processedImages = await Promise.all(
         params.referenceImages.map(async (imgUrl) => {
           const imageData = await unifiedCacheService.getImageForAI(imgUrl);
           return ensureBase64ForAI(imageData, options?.signal);
         })
       );
-      processedImages = results
-        .filter(
-          (r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled'
-        )
-        .map((r) => r.value);
-      results
-        .filter((r) => r.status === 'rejected')
-        .forEach((r) =>
-          console.warn(
-            '[executeImageViaAdapter] reference image processing failed:',
-            (r as PromiseRejectedResult).reason
-          )
-        );
     }
 
     options?.onProgress?.({ progress: 10, phase: 'submitting' });
@@ -277,7 +264,7 @@ export async function executeVideoViaAdapter(
   try {
     let processedImages: string[] | undefined;
     if (refUrls && refUrls.length > 0) {
-      const results = await Promise.allSettled(
+      processedImages = await Promise.all(
         refUrls.map(async (url) => {
           if (isVirtualPath(url)) {
             const imageData = await unifiedCacheService.getImageForAI(url);
@@ -286,19 +273,6 @@ export async function executeVideoViaAdapter(
           return url;
         })
       );
-      processedImages = results
-        .filter(
-          (r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled'
-        )
-        .map((r) => r.value);
-      results
-        .filter((r) => r.status === 'rejected')
-        .forEach((r) =>
-          console.warn(
-            '[executeVideoViaAdapter] reference image processing failed:',
-            (r as PromiseRejectedResult).reason
-          )
-        );
     }
 
     options?.onProgress?.({ progress: 10, phase: 'submitting' });

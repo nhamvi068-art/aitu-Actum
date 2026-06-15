@@ -133,6 +133,8 @@ const IMAGE_API_COMPATIBILITY_OPTIONS: ImageApiCompatibility[] = [
   'auto',
   'openai-gpt-image',
   'tuzi-gpt-image',
+  'gptbest-gpt-image',
+  'nanobanana',
   'openai-compatible-basic',
 ];
 
@@ -261,6 +263,12 @@ const IMAGE_API_COMPATIBILITY_META: Record<
   'tuzi-gpt-image': {
     label: 'Tuzi GPT 兼容',
   },
+  'gptbest-gpt-image': {
+    label: 'Blt GPT 兼容',
+  },
+  'nanobanana': {
+    label: 'Nano-banana 图片兼容',
+  },
   'openai-compatible-basic': {
     label: 'OpenAI-compatible 通用兼容（兜底）',
   },
@@ -273,6 +281,8 @@ function normalizeImageApiCompatibilityForDisplay(
     value === 'auto' ||
     value === 'openai-gpt-image' ||
     value === 'tuzi-gpt-image' ||
+    value === 'gptbest-gpt-image' ||
+    value === 'nanobanana' ||
     value === 'openai-compatible-basic'
   ) {
     return value;
@@ -2239,34 +2249,6 @@ export const SettingsDialog = ({
               <span className="settings-dialog__field-hint">
                 {selectedImageApiCompatibilityHint}
               </span>
-            </div>
-
-            <div className="settings-dialog__field settings-dialog__field--column settings-dialog__field--full">
-              <label className="settings-dialog__label settings-dialog__label--stacked">
-                异步图片端点
-              </label>
-              <div>
-                <Switch
-                  size="small"
-                  value={selectedProfile.preferAsyncImageEndpoint ?? false}
-                  onChange={(checked) => {
-                    const value = checked as boolean;
-                    updateProfile(selectedProfile.id, (profile) => ({
-                      ...profile,
-                      preferAsyncImageEndpoint: value,
-                    }));
-                    providerProfilesSettings.update(
-                      cloneValue(providerProfilesSettings.get()).map(
-                        (profile) =>
-                          profile.id === selectedProfile.id
-                            ? { ...profile, preferAsyncImageEndpoint: value }
-                            : profile
-                      )
-                    );
-                  }}
-                  label="优先走 /videos 异步接口"
-                />
-              </div>
             </div>
 
             <div className="settings-dialog__field settings-dialog__field--column settings-dialog__field--full">

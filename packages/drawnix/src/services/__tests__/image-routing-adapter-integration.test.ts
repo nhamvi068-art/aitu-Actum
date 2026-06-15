@@ -176,17 +176,13 @@ describe('image routing to default registered adapters', () => {
   });
 
   it('routes pricing async-image bindings to the default image adapter', () => {
-    const asyncTuziProfile = {
-      ...tuziProfile,
-      preferAsyncImageEndpoint: true,
-    };
     const binding = inferBindingsForProviderModel(
-      asyncTuziProfile,
+      tuziProfile,
       {
-        id: 'gemini-3-pro-image-preview-async',
-        label: 'Gemini Async Image',
+        id: 'gpt-image-1-vip',
+        label: 'GPT Image 1 VIP',
         type: 'image',
-        vendor: ModelVendor.GEMINI,
+        vendor: ModelVendor.GPT,
       },
       {
         'openai-video': {
@@ -198,7 +194,6 @@ describe('image routing to default registered adapters', () => {
     ).find((entry) => entry.requestSchema === 'openai.async.image.form');
 
     expect(binding?.protocol).toBe('openai.async.media');
-    expect(binding?.submitPath).toBe('/videos');
     expect(resolveAdapterForBinding(binding!, 'image')?.id).toBe(
       'gemini-image-adapter'
     );

@@ -49,39 +49,16 @@ export async function ensureBase64ForAI(
     const base64Part = value.slice(value.indexOf(',') + 1);
     const estimatedBytes = (base64Part.length * 3) / 4;
     if (estimatedBytes <= MAX_REFERENCE_IMAGE_BYTES) return value;
-    try {
-      const res = await fetch(value, { signal });
-      const blob = await res.blob();
-      return blobToBase64Under1MB(blob);
-    } catch (error) {
-      console.warn(
-        '[ensureBase64ForAI] data URL fetch failed, returning original:',
-        error
-      );
-      return value;
-    }
+    const res = await fetch(value, { signal });
+    const blob = await res.blob();
+    return blobToBase64Under1MB(blob);
   }
   if (value.startsWith('http://') || value.startsWith('https://')) {
-    try {
-      const res = await fetch(value, { signal, referrerPolicy: 'no-referrer' });
-      if (!res.ok) {
-        console.warn(
-          `[ensureBase64ForAI] reference image fetch returned ${res.status}, returning original URL`
-        );
-        return value;
-      }
-      const blob = await res.blob();
-      return blobToBase64Under1MB(blob);
-    } catch (error) {
-      // 远程参考图被 CORS/网络拦截时降级返回原 URL，
-      // 让支持 URL 直传的适配器继续工作，整体任务不会因此失败
-      console.warn(
-        '[ensureBase64ForAI] reference image fetch failed (likely CORS), returning original URL:',
-        value,
-        error
-      );
-      return value;
-    }
+    const res = await fetch(value, { signal, referrerPolicy: 'no-referrer' });
+    if (!res.ok)
+      throw new Error(`Failed to fetch reference image: ${res.status}`);
+    const blob = await res.blob();
+    return blobToBase64Under1MB(blob);
   }
   return value;
 }

@@ -10,7 +10,6 @@ import { configIndexedDBWriter } from './config-indexeddb-writer';
 import type { GeminiConfig } from './gemini-api/types';
 import type { VideoAPIConfig } from './config-indexeddb-writer';
 import type { ProviderPricingCache } from './model-pricing-types';
-import { LEGACY_DEFAULT_IMAGE_MODEL_ID } from '../constants/legacy-image-model';
 import {
   DEFAULT_PROVIDER_IMAGE_API_COMPATIBILITY,
   LEGACY_DEFAULT_PROVIDER_IMAGE_API_COMPATIBILITY,
@@ -63,7 +62,7 @@ export {
 export const LEGACY_DEFAULT_PROVIDER_PROFILE_ID = 'legacy-default';
 export const DEFAULT_INVOCATION_PRESET_ID = 'default';
 export const TUZI_PROVIDER_ICON_URL = '/actum-logo.png';
-export const TUZI_PROVIDER_DEFAULT_BASE_URL = 'https://api.tu-zi.com/v1';
+export const TUZI_PROVIDER_DEFAULT_BASE_URL = 'https://api.bltcy.ai';
 export const TUZI_DEFAULT_PROVIDER_NAME = 'default 分组';
 
 const DEFAULT_PROVIDER_CAPABILITIES: ProviderCapabilities = {
@@ -349,6 +348,8 @@ class SettingsManager {
       value === 'auto' ||
       value === 'openai-gpt-image' ||
       value === 'tuzi-gpt-image' ||
+      value === 'gptbest-gpt-image' ||
+      value === 'nanobanana' ||
       value === 'openai-compatible-basic'
     ) {
       return value;
@@ -381,7 +382,6 @@ class SettingsManager {
     return {
       legacyDefaultImageApiCompatibilityV1:
         migrations.legacyDefaultImageApiCompatibilityV1 === true,
-      legacyDefaultImageModelV1: migrations.legacyDefaultImageModelV1 === true,
     };
   }
 
@@ -446,12 +446,6 @@ class SettingsManager {
       : DEFAULT_PROVIDER_IMAGE_API_COMPATIBILITY;
   }
 
-  private migrateLegacyDefaultImageModel(
-    gemini: GeminiSettings
-  ): GeminiSettings {
-    return gemini;
-  }
-
   private normalizeCapabilities(value: unknown): ProviderCapabilities {
     const capabilities =
       value && typeof value === 'object'
@@ -508,7 +502,6 @@ class SettingsManager {
         profile?.imageApiCompatibility,
         this.getLegacyDefaultImageApiCompatibilityFallback(baseUrl)
       ),
-      preferAsyncImageEndpoint: profile?.preferAsyncImageEndpoint === true,
       enabled: true,
       capabilities: { ...DEFAULT_PROVIDER_CAPABILITIES },
     };
@@ -589,7 +582,6 @@ class SettingsManager {
           imageApiCompatibility: this.normalizeStoredImageApiCompatibility(
             profile.imageApiCompatibility
           ),
-          preferAsyncImageEndpoint: profile.preferAsyncImageEndpoint === true,
           extraHeaders: this.normalizeStringRecord(profile.extraHeaders),
           enabled: profile.enabled !== false,
           capabilities: this.normalizeCapabilities(profile.capabilities),
@@ -766,12 +758,8 @@ class SettingsManager {
     const migrations: SettingsMigrations = { ...settings.migrations };
     const shouldRunLegacyDefaultImageMigration =
       migrations.legacyDefaultImageApiCompatibilityV1 !== true;
-    const shouldRunLegacyDefaultImageModelMigration =
-      migrations.legacyDefaultImageModelV1 !== true;
-    const gemini = shouldRunLegacyDefaultImageModelMigration
-      ? this.migrateLegacyDefaultImageModel(settings.gemini)
-      : settings.gemini;
-    const legacyBaseUrl = gemini.baseUrl || DEFAULT_SETTINGS.gemini.baseUrl;
+    const legacyBaseUrl =
+      settings.gemini.baseUrl || DEFAULT_SETTINGS.gemini.baseUrl;
     const legacyProfileForBuild =
       shouldRunLegacyDefaultImageMigration &&
       this.shouldMigrateLegacyDefaultImageApiCompatibility(
@@ -789,15 +777,9 @@ class SettingsManager {
       migrations.legacyDefaultImageApiCompatibilityV1 = true;
       this.shouldPersistSettingsAfterInitialization = true;
     }
-    if (shouldRunLegacyDefaultImageModelMigration) {
-      migrations.legacyDefaultImageModelV1 = true;
-      if (gemini !== settings.gemini) {
-        this.shouldPersistSettingsAfterInitialization = true;
-      }
-    }
 
     const legacyProfile = {
-      ...this.buildLegacyDefaultProfile(gemini, legacyProfileForBuild),
+      ...this.buildLegacyDefaultProfile(settings.gemini, legacyProfileForBuild),
       extraHeaders: this.normalizeStringRecord(
         existingLegacyProfile?.extraHeaders
       ),
@@ -805,7 +787,7 @@ class SettingsManager {
         existingLegacyProfile?.capabilities
       ),
     };
-    const legacyPreset = this.buildLegacyDefaultPreset(gemini);
+    const legacyPreset = this.buildLegacyDefaultPreset(settings.gemini);
 
     const providerProfiles = [
       legacyProfile,

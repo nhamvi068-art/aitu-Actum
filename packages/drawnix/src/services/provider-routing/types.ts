@@ -96,7 +96,6 @@ export interface ProviderProfileSnapshot
     | 'baseUrl'
     | 'apiKey'
     | 'imageApiCompatibility'
-    | 'preferAsyncImageEndpoint'
     | 'extraHeaders'
   > {
   authType: ProviderAuthStrategy;

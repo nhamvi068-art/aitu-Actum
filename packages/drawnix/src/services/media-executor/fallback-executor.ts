@@ -285,25 +285,12 @@ export class FallbackMediaExecutor implements IMediaExecutor {
       let processedImages: string[] | undefined;
       if (referenceImages && referenceImages.length > 0) {
         const t0 = performance.now();
-        const results = await Promise.allSettled(
+        processedImages = await Promise.all(
           referenceImages.map(async (imgUrl) => {
             const imageData = await unifiedCacheService.getImageForAI(imgUrl);
             return ensureBase64ForAI(imageData, options?.signal);
           })
         );
-        processedImages = results
-          .filter(
-            (r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled'
-          )
-          .map((r) => r.value);
-        results
-          .filter((r) => r.status === 'rejected')
-          .forEach((r) =>
-            console.warn(
-              '[FallbackMediaExecutor] reference image processing failed:',
-              (r as PromiseRejectedResult).reason
-            )
-          );
       }
 
       // 构建请求体
@@ -462,25 +449,12 @@ export class FallbackMediaExecutor implements IMediaExecutor {
       let processedImages: string[] | undefined;
       if (params.referenceImages && params.referenceImages.length > 0) {
         const t0 = performance.now();
-        const results = await Promise.allSettled(
+        processedImages = await Promise.all(
           params.referenceImages.map(async (imgUrl) => {
             const imageData = await unifiedCacheService.getImageForAI(imgUrl);
             return ensureBase64ForAI(imageData, options?.signal);
           })
         );
-        processedImages = results
-          .filter(
-            (r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled'
-          )
-          .map((r) => r.value);
-        results
-          .filter((r) => r.status === 'rejected')
-          .forEach((r) =>
-            console.warn(
-              '[generateAsyncImageTask] reference image processing failed:',
-              (r as PromiseRejectedResult).reason
-            )
-          );
       }
       let processedMaskImage: string | undefined;
       if (params.maskImage) {
@@ -671,7 +645,7 @@ export class FallbackMediaExecutor implements IMediaExecutor {
         const t0 = performance.now();
         const isVirtual = (u: string) =>
           u.startsWith('/__aitu_cache__/') || u.startsWith('/asset-library/');
-        const results = await Promise.allSettled(
+        referenceImages = await Promise.all(
           refUrls.map(async (url) => {
             if (isVirtual(url)) {
               const imageData = await unifiedCacheService.getImageForAI(url);
@@ -680,19 +654,6 @@ export class FallbackMediaExecutor implements IMediaExecutor {
             return url;
           })
         );
-        referenceImages = results
-          .filter(
-            (r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled'
-          )
-          .map((r) => r.value);
-        results
-          .filter((r) => r.status === 'rejected')
-          .forEach((r) =>
-            console.warn(
-              '[FallbackMediaExecutor.generateVideo] reference image processing failed:',
-              (r as PromiseRejectedResult).reason
-            )
-          );
       }
 
       const videoApiConfig = {
