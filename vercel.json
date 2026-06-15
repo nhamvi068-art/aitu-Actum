@@ -1,8 +1,24 @@
 {
-  "buildCommand": "node scripts/update-version.js && cd apps/web && NODE_OPTIONS='--max-old-space-size=4096' ../../node_modules/.bin/vite build && NODE_OPTIONS='--max-old-space-size=4096' ../../node_modules/.bin/vite build --config vite.sw.config.ts",
-  "installCommand": "npm install --legacy-peer-deps --include=dev --prefer-offline",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm run build:web",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "outputDirectory": "dist/apps/web",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
   ]
 }
